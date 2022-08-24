@@ -1,3 +1,4 @@
+from bdb import Breakpoint
 import numpy as np
 import pandas as pd
 import json
@@ -28,22 +29,6 @@ def replaceNansWithTrainingDataValues(df):
         df[col] = df[col].fillna(trainNanReplacementValuesDictionary[str(col)])
     return df
 
-def removeDummiesAndCorrelatedFeaturesFromAvailabilityList(availabilityList,feature):
-    with open('../data/sigCorrDictionary.json') as d:
-        sigCorrDictionary = json.load(d)
-    with open('../data/relatedDummiesDictionary.json') as d:
-        relatedDummiesDictionary = json.load(d)
-    if (feature in relatedDummiesDictionary.keys()):
-        for dummy in relatedDummiesDictionary[feature]:
-            if dummy in availabilityList:
-                availabilityList.remove(dummy)
-    for corrFeature in sigCorrDictionary[feature]:
-        if corrFeature in availabilityList:
-            availabilityList.remove(corrFeature)
-    if feature in availabilityList:
-        availabilityList.remove(feature)
-    return availabilityList
-
 def hasInfOrNanValues(arr):
     np.isnan(arr).any()
 
@@ -64,10 +49,42 @@ def joinToPartner(candidateDF,partnerFullDF):
     partnerList = columnDataDictionary['partnerList']
     
     partner_o = partnerFullDF[['iid','pid']]
+    partner_o['iid_o'] = partner_o['iid']
+    partner_o['pid_o'] = partner_o['pid']
+    partner_o = partner_o.drop(['iid','pid'], axis=1)
     for col in list(partner_o.columns):
         if col in partnerList:
             partner_o[str(col)+'_o'] = partnerFullDF[col]
     
-    return pd.merge(candidateDF,partner_o,how='left',left_on=['iid','pid'],right_on=['pid','iid'])
+    return pd.merge(candidateDF,partner_o,how='left',left_on=['iid','pid'],right_on=['pid_o','iid_o'])
+
+def returnDFWithpartnerDistance(df,displayNoneNumber = False):
+    distances = []
+    for row in df:
+        breakpoint()
+        candidateLocation = getLocation(str(row['zipcode']),str(row['from']))
+        partnerLocation = getLocation(str(row['zipcode_o']),str(row['from_o']))
+        if(candidateLocation != None and partnerLocation != None):
+            distances.append(great_circle(candidateLocation,partnerLocation).mi)
+        else:
+            distances.append(np.nan)
+    if (displayNoneNumber):
+        total = df.shape[0]
+        noneCount = sum(x is np.nan for x in distances)
+        print(f'{100 * noneCount/total}% of data is None')
+    df['partnerDistance'] = pd.Series(distances)
+    return df
+
+def getLocation(zipcode,fromLocation):
+    try:
+        if zipcode in ['nan',None,'']:
+            home = fromLocation
+        else:
+            home = zipcode
+        if type(home)==str:
+            return geocode(home).point[0:2]
+        return None
+    except BaseException:
+        return None
 
 
