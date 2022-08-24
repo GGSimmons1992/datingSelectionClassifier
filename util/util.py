@@ -58,3 +58,16 @@ def plotCorrelation(x,y,title):
     plt.plot(plotX,m*plotX+b)
     plt.title(f'{title} m={np.round(m,2)}, b={np.round(b,2)}')
     
+def joinToPartner(candidateDF,partnerFullDF):
+    with open('../data/columnDataDictionary.json') as d:
+        columnDataDictionary = json.load(d)
+    partnerList = columnDataDictionary['partnerList']
+    
+    partner_o = partnerFullDF[['iid','pid']]
+    for col in list(partner_o.columns):
+        if col in partnerList:
+            partner_o[str(col)+'_o'] = partnerFullDF[col]
+    
+    return pd.merge(candidateDF,partner_o,how='left',left_on=['iid','pid'],right_on=['pid','iid'])
+
+
