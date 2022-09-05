@@ -6,15 +6,13 @@ import geopy
 import math
 import sklearn.linear_model as lm
 import matplotlib.pyplot as plt
-from geopy import GoogleV3
+from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 from geopy.distance import great_circle
 from os.path import exists
+import datetime
 
-with open('../data/googleApiKey.json') as d:
-    googleKeyDictionary = json.load(d)
-    apiKey = googleKeyDictionary['apikey']
-locator = GoogleV3(api_key=apiKey)
+locator = Nominatim(user_agent="datingSelectionClassifier")
 geocode = RateLimiter(locator.geocode, min_delay_seconds=1.5)
 
 def isNan(x):
@@ -52,39 +50,46 @@ def joinToPartner(candidateDF,partnerFullDF):
     partner_o['iid_o'] = partner_o['iid']
     partner_o['pid_o'] = partner_o['pid']
     partner_o = partner_o.drop(['iid','pid'], axis=1)
-    for col in list(partner_o.columns):
+    for col in list(partnerFullDF.columns):
         if col in partnerList:
             partner_o[str(col)+'_o'] = partnerFullDF[col]
-    
+
     return pd.merge(candidateDF,partner_o,how='left',left_on=['iid','pid'],right_on=['pid_o','iid_o'])
 
 def returnDFWithpartnerDistance(df,displayNoneNumber = False):
+    milestone = datetime.datetime.now()
+    nanCount=0
     distances = []
-    for row in df:
-        breakpoint()
+    for rowindex in range(df.shape[0]):
+        row = df.iloc[rowindex]
         candidateLocation = getLocation(str(row['zipcode']),str(row['from']))
         partnerLocation = getLocation(str(row['zipcode_o']),str(row['from_o']))
         if(candidateLocation != None and partnerLocation != None):
-            distances.append(great_circle(candidateLocation,partnerLocation).mi)
+            distance = great_circle(candidateLocation,partnerLocation).mi
+            if distance == None:
+                nanCount += 1
+            distances.append(distance)
         else:
             distances.append(np.nan)
-    if (displayNoneNumber):
-        total = df.shape[0]
-        noneCount = sum(x is np.nan for x in distances)
-        print(f'{100 * noneCount/total}% of data is None')
+            nanCount += 1
+        if ((datetime.datetime.now() > milestone) and (displayNoneNumber)):
+            total = df.shape[0]
+            print(datetime.datetime.now().strftime('%H:%M:%S'))
+            print(f'{rowindex} of {df.shape[0]}: {rowindex*100.0/(total)}% complete')
+            print(f'{100 * nanCount/total}% of data is None')
+            milestone += datetime.timedelta(minutes=5)
+
     df['partnerDistance'] = pd.Series(distances)
     return df
 
 def getLocation(zipcode,fromLocation):
     try:
         if zipcode in ['nan',None,'']:
-            home = fromLocation
-        else:
-            home = zipcode
-        if type(home)==str:
-            return geocode(home).point[0:2]
-        return None
+            if type(fromLocation) == str:
+                return geocode(fromLocation).point[0:2]
+            return None
+        while len(zipcode)<5:
+            zipcode='0'+zipcode
+        return geocode(zipcode).point[0:2]
     except BaseException:
         return None
-
-
