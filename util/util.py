@@ -57,11 +57,13 @@ def joinToPartner(candidateDF,partnerFullDF):
     return pd.merge(candidateDF,partner_o,how='left',left_on=['iid','pid'],right_on=['pid_o','iid_o'])
 
 def returnDFWithpartnerDistance(df,datasetType,displayNoneNumber = False):
+    df = getCoupleLocations(df,datasetType,displayNoneNumber)
+    
     milestone = datetime.datetime.now()
     nanCount=0
     distances = []
-    if exists(f"../data/{datasetType}Distances.json"):
-        with open(f"../data/{datasetType}Distances.json") as d:
+    if exists(f"../data/processedData/{datasetType}Distances.json"):
+        with open(f"../data/processedData/{datasetType}Distances.json") as d:
             distancesDictionary = json.load(d)
         nanCount = distancesDictionary["nanCount"]
         distances = distancesDictionary["distances"]
@@ -69,9 +71,10 @@ def returnDFWithpartnerDistance(df,datasetType,displayNoneNumber = False):
     if len(distances) < df.shape[0]:
         for rowindex in range(len(distances),df.shape[0]):
             row = df.iloc[rowindex]
-            candidateLocation = getLocation(str(row['zipcode']),str(row['from']))
-            partnerLocation = getLocation(str(row['zipcode_o']),str(row['from_o']))
-            if(candidateLocation != None and partnerLocation != None):
+            if (isNan(row["lats"]) == False and isNan(row["lons"]) == False and 
+            isNan(row["lats_o"]) == False and isNan(row["lons_o"]) == False):
+                candidateLocation = (row["lats"],row["lons"])
+                partnerLocation = (row["lats_o"],row["lons_o"])
                 distance = great_circle(candidateLocation,partnerLocation).mi
                 if distance == None:
                     nanCount += 1
@@ -91,38 +94,75 @@ def returnDFWithpartnerDistance(df,datasetType,displayNoneNumber = False):
                     "distances": distances
                 }
 
-                with open(f"../data/{datasetType}Distances.json", 'w') as fp:
+                with open(f"../data/processedData/{datasetType}Distances.json", 'w') as fp:
                     json.dump(distancesDictionary, fp)
-    else:
-        if displayNoneNumber:
-            print('starting doublecheck')
-        for rowindex in range(df.shape[0]):
-            if(distances[rowindex] == None):
-                row = df.iloc[rowindex]
-                candidateLocation = getLocation(str(row['zipcode']),str(row['from']))
-                partnerLocation = getLocation(str(row['zipcode_o']),str(row['from_o']))
-                if(candidateLocation != None and partnerLocation != None):
-                    distance = great_circle(candidateLocation,partnerLocation).mi
-                    if distance != None:
-                        distances[rowindex] = distance
-                        nanCount -= 1
-
-                if ((datetime.datetime.now() > milestone) and (displayNoneNumber)):
-                    total = df.shape[0]
-                    print(datetime.datetime.now().strftime('%H:%M:%S'))
-                    print(f'{100 * nanCount/total}% of data is None')
-                    milestone += datetime.timedelta(minutes=5)
-                    
-                    distancesDictionary = {
-                        "nanCount": nanCount,
-                        "distances": distances
-                    }
-
-                    with open(f"../data/{datasetType}Distances.json", 'w') as fp:
-                        json.dump(distancesDictionary, fp)
     
     df['partnerDistance'] = pd.Series(distances)
     return df
+
+def getCoupleLocations(df,datasetType,displayNoneNumber = False):
+    milestone = datetime.datetime.now()
+    nanCount = 0
+    candidateLats = []
+    candidateLons = []
+    partnerLats = []
+    partnerLons = []
+    if exists(f"../data/processedData/{datasetType}Locations.json"):
+        with open(f"../data/processedData/{datasetType}Locations.json") as d:
+            locationsDictionary = json.load(d)
+        nanCount = locationsDictionary["nanCount"]
+        candidateLats = locationsDictionary["candidateLats"]
+        candidateLons = locationsDictionary["candidateLons"]
+        partnerLats = locationsDictionary["partnerLats"]
+        partnerLons = locationsDictionary["partnerLons"]
+    
+    if len(partnerLons) < df.shape[0]:
+        for rowindex in range(len(partnerLons),df.shape[0]):
+            candidateLat = np.nan
+            candidateLon = np.nan
+            partnerLat = np.nan
+            partnerLon = np.nan
+
+            row = df.iloc[rowindex]
+            candidateLocation = getLocation(str(row['zipcode']),str(row['from']))
+            partnerLocation = getLocation(str(row['zipcode_o']),str(row['from_o']))
+            if (candidateLocation != None):
+                candidateLat = candidateLocation[0]
+                candidateLon = candidateLocation[1]
+            if (partnerLocation != None):
+                partnerLat = partnerLocation[0]
+                partnerLon = partnerLocation[1]
+            
+            candidateLats.append(candidateLat)
+            candidateLons.append(candidateLon)
+            partnerLats.append(partnerLat)
+            partnerLons.append(partnerLon)
+
+            if ((datetime.datetime.now() > milestone) and (displayNoneNumber)):
+                total = df.shape[0] * 4
+                nanCount = candidateLats.count(np.nan) + candidateLons.count(np.nan) + partnerLats.count(np.nan) + partnerLons.count(np.nan)
+
+                print(datetime.datetime.now().strftime('%H:%M:%S'))
+                print(f'{rowindex} of {df.shape[0]}: {rowindex*100.0/(df.shape[0])}% complete')
+                print(f'{100 * nanCount/total}% of data is None')
+                milestone += datetime.timedelta(minutes=5)
+                
+                locationsDictionary = {
+                    "nanCount": nanCount,
+                    "candidateLats": candidateLats,
+                    "candidateLons": candidateLons,
+                    "partnerLats": partnerLats,
+                    "partnerLons": partnerLons
+                }
+
+                with open(f"../data/processedData/{datasetType}Locations.json", 'w') as fp:
+                    json.dump(locationsDictionary, fp)
+    
+    df['lats'] = pd.Series(candidateLats)
+    df['lons'] = pd.Series(candidateLons)
+    df['lats_o'] = pd.Series(partnerLats)
+    df['lons_o'] = pd.Series(partnerLons)
+    return df  
 
 def getLocation(zipcode,fromLocation):
     try:
