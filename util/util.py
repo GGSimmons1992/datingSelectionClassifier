@@ -24,7 +24,8 @@ def replaceNansWithTrainingDataValues(df):
     with open('../data/trainNanReplacementValuesDictionary.json') as d:
         trainNanReplacementValuesDictionary = json.load(d)
     for col in df.columns:
-        df[col] = df[col].fillna(trainNanReplacementValuesDictionary[str(col)])
+        if str(col) in trainNanReplacementValuesDictionary.keys():
+            df[col] = df[col].fillna(trainNanReplacementValuesDictionary[str(col)])
     return df
 
 def hasInfOrNanValues(arr):
@@ -42,7 +43,7 @@ def plotCorrelation(x,y,title):
     plt.title(f'{title} m={np.round(m,2)}, b={np.round(b,2)}')
     
 def joinToPartner(candidateDF,partnerFullDF):
-    with open('../data/columnDataDictionary.json') as d:
+    with open('../data/processedData/columnDataDictionary.json') as d:
         columnDataDictionary = json.load(d)
     partnerList = columnDataDictionary['partnerList']
     
