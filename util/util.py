@@ -11,9 +11,15 @@ from geopy.extra.rate_limiter import RateLimiter
 from geopy.distance import great_circle
 from os.path import exists
 import datetime
+import sys
 
 locator = Nominatim(user_agent="datingSelectionClassifier")
 geocode = RateLimiter(locator.geocode, min_delay_seconds=1.5)
+
+locationsDictionary = dict()
+if exists("../data/locations.json"):
+    with open("../data/locations.json") as d:
+        locationsDictionary = json.load(d)
 
 def isNan(x):
     if type(x) != str:
@@ -25,7 +31,11 @@ def replaceNansWithTrainingDataValues(df):
         trainNanReplacementValuesDictionary = json.load(d)
     for col in df.columns:
         if str(col) in trainNanReplacementValuesDictionary.keys():
-            df[col] = df[col].fillna(trainNanReplacementValuesDictionary[str(col)])
+            replacementValue = trainNanReplacementValuesDictionary[str(col)]
+            df[col] = df[col].fillna(replacementValue)
+            df[col] = df[col].replace([np.inf, -np.inf], replacementValue)
+            if df[col].dtype == float:
+                df.loc[(df[col] >= sys.float_info.max) | (df[col] <= sys.float_info.min),col] = replacementValue
     return df
 
 def hasInfOrNanValues(arr):
@@ -62,7 +72,7 @@ def joinToPartner(candidateDF,partnerFullDF):
             finalDF = finalDF.drop(str(finalCol),axis=1)
         elif "o_y" in finalCol:
             finalDF = finalDF.drop(str(finalCol),axis=1)
-    return 
+    return finalDF
 
 def returnDFWithpartnerDistance(df,datasetType,displayNoneNumber = False):
     milestone = datetime.datetime.now()
@@ -111,12 +121,15 @@ def getLocations(df,displayNoneNumber = False):
     nanCount = 0
     lats = []
     lons = []
-    if exists(f"../data/locations.json"):
-        with open(f"../data/locations.json") as d:
-            locationsDictionary = json.load(d)
-        nanCount = locationsDictionary["nanCount"]
-        lats = locationsDictionary["lats"]
-        lons = locationsDictionary["lons"]
+
+    df["zipcode"] = df["zipcode"].str.replace(',', '')
+
+    if exists("../data/coordinates.json"):
+        with open("../data/coordinates.json") as d:
+            coordinatesDictionary = json.load(d)
+        nanCount = coordinatesDictionary["nanCount"]
+        lats = coordinatesDictionary["lats"]
+        lons = coordinatesDictionary["lons"]
     
     if len(lons) < df.shape[0]:
         for rowindex in range(len(lons),df.shape[0]):
@@ -134,34 +147,144 @@ def getLocations(df,displayNoneNumber = False):
 
             if ((datetime.datetime.now() > milestone) and (displayNoneNumber)):
                 total = df.shape[0] * 2
-                nanCount = lats.count(np.nan) + lons.count(np.nan)
+                nanList = [np.nan for lat in lats if isNan(lat)] + [np.nan for lon in lons if isNan(lon)]
+                nanCount = len(nanList)
 
                 print(datetime.datetime.now().strftime('%H:%M:%S'))
                 print(f'{rowindex} of {df.shape[0]}: {rowindex*100.0/(df.shape[0])}% complete')
-                print(f'{100 * nanCount/total}% of data is None')
+                print(f'{int(nanCount/2)} Non-Locations. {100 * nanCount/total}% of data is None')
                 milestone += datetime.timedelta(minutes=5)
                 
-                locationsDictionary = {
+                coordinatesDictionary = {
                     "nanCount": nanCount,
                     "lats": lats,
                     "lons": lons
                 }
 
-                with open(f"../data/locations.json") as fp:
-                    json.dump(locationsDictionary, fp)
-    
+                with open("../data/coordinates.json","w") as fp:
+                    json.dump(coordinatesDictionary, fp)
+    else:
+        for rowindex in range(df.shape[0]):
+            if np.isnan(lats[rowindex]) | np.isnan(lons[rowindex]):
+                row = df.iloc[rowindex]
+                location = getLocation(str(row['zipcode']),str(row['from']))
+                if (location != None):
+                    lats[rowindex] = location[0]
+                    lons[rowindex] = location[1]
+
+                if ((datetime.datetime.now() > milestone) and (displayNoneNumber)):
+                    total = df.shape[0] * 2
+                    nanList = [np.nan for lat in lats if isNan(lat)] + [np.nan for lon in lons if isNan(lon)]
+                    nanCount = len(nanList)
+
+                    print(datetime.datetime.now().strftime('%H:%M:%S'))
+                    print(f'{rowindex} of {df.shape[0]}: {rowindex*100.0/(df.shape[0])}% complete')
+                    print(f'{int(nanCount/2)} Non-Locations. {100 * nanCount/total}% of data is None')
+                    milestone += datetime.timedelta(minutes=5)
+                    
+                    coordinatesDictionary = {
+                        "nanCount": nanCount,
+                        "lats": lats,
+                        "lons": lons
+                    }
+
+                    with open("../data/coordinates.json","w") as fp:
+                        json.dump(coordinatesDictionary, fp)
+
     df['lats'] = pd.Series(lats)
     df['lons'] = pd.Series(lons)
     return df  
 
 def getLocation(zipcode,fromLocation):
+    locationString = zipcode
+    if locationString in ['nan',None,'']:
+        locationString = fromLocation
+    else:
+        while len(locationString)<5:
+            locationString = '0' + locationString
+    if locationString in locationsDictionary.keys():
+        return locationsDictionary[locationString]
     try:
-        if zipcode in ['nan',None,'']:
-            if type(fromLocation) == str:
-                return geocode(fromLocation).point[0:2]
-            return None
-        while len(zipcode)<5:
-            zipcode='0'+zipcode
-        return geocode(zipcode).point[0:2]
+        coordinates = geocode(locationString).point[0:2]
+        if coordinates != None:
+            locationsDictionary[locationString] = coordinates
+            with open("../data/locations.json","w") as fp:
+                json.dump(locationsDictionary, fp)
+        elif locationString != fromLocation:
+            locationString = fromLocation
+            coordinates = geocode(locationString).point[0:2]
+            if coordinates != None:
+                locationsDictionary[locationString] = coordinates
+                with open("../data/locations.json","w") as fp:
+                    json.dump(locationsDictionary, fp)
+        return coordinates
     except BaseException:
         return None
+
+def fixAmbiguousScores(df):
+    halfwayQuestionSanityTest(df)
+    df = redistributePoints(df)
+    df = applyHalfwayChange(df)
+    halfwayQuestionSanityTest(df)
+    return df
+
+def redistributePoints(df):
+    with open('../data/processedData/columnDataDictionary.json') as d:
+        columnDataDictionary = json.load(d)
+    pointDistributionList = columnDataDictionary['pointDistributionList']
+    
+    for question in pointDistributionList:
+        questionSumString = f'{question}_sum'
+        questionCols = [str(col) for col in df if question in str(col)]
+        df[questionSumString] = df[questionCols].sum(axis = 1)
+        for questionCol in questionCols:
+            questionValues = [np.nan] * df.shape[0]
+            for rowindex in range(df.shape[0]):
+                row = df.iloc[rowindex]
+                if isNan(row[questionSumString]) | (row[questionSumString] == 0):
+                    questionValues[rowindex] = row[str(questionCol)]
+                else:
+                    questionValues[rowindex] = row[str(questionCol)] * 100 / row[questionSumString]
+            df[str(questionCol)] = pd.Series(questionValues)
+        df = df.drop(questionSumString,axis=1)
+    return df
+
+def applyHalfwayChange(df):
+    halfwayChangeColumns = [str(col) for col in df.columns if (("1_s" in str(col)) | ("3_s" in str(col)))]
+    halfwayQuestionSanityTest(df)
+    for halfwayQuestion in halfwayChangeColumns:
+        targetQuestion = ""
+        if ("1_s" in halfwayQuestion):
+            if halfwayQuestion == "attr1_s_o":
+                targetQuestion = "pf_o_att"
+            elif halfwayQuestion == "sinc1_s_o":
+                targetQuestion = "pf_o_sin"
+            elif halfwayQuestion == "intel1_s_o":
+                targetQuestion = "pf_o_int"
+            elif halfwayQuestion == "fun1_s_o":
+                targetQuestion = "pf_o_fun"
+            elif halfwayQuestion == "amb1_s_o":
+                targetQuestion = "pf_o_amb"
+            elif halfwayQuestion == "shar1_s_o":
+                targetQuestion = "pf_o_sha"
+            else:
+                targetQuestion = halfwayQuestion.replace("1_s","1_1")
+        else:
+            targetQuestion = halfwayQuestion.replace("3_s","3_1")
+        currentMindsetAnswers = []
+        for rowindex in range(df.shape[0]):
+            row = df.iloc[rowindex]
+            if isNan(row[halfwayQuestion]) | (row["order"] <= int(row["round"])):
+                currentMindsetAnswers.append(row[targetQuestion])
+            else:
+                currentMindsetAnswers.append(row[halfwayQuestion])
+        df[targetQuestion] = pd.Series(currentMindsetAnswers)
+    df = df.drop(halfwayChangeColumns + ["round","order"],axis = 1)
+    halfwayQuestionSanityTest(df)
+    return df
+
+def halfwayQuestionSanityTest(df):
+    halfwayChangeColumns = [str(col) for col in df.columns if (("1_s" in str(col)) | ("3_s" in str(col)))]
+
+    if(len(halfwayChangeColumns) > 0 and "order" not in df.columns):
+        breakpoint()
