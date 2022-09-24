@@ -34,8 +34,6 @@ def replaceNansWithTrainingDataValues(df):
             replacementValue = trainNanReplacementValuesDictionary[str(col)]
             df[col] = df[col].fillna(replacementValue)
             df[col] = df[col].replace([np.inf, -np.inf], replacementValue)
-            if df[col].dtype == float:
-                df.loc[(df[col] >= sys.float_info.max) | (df[col] <= sys.float_info.min),col] = replacementValue
     return df
 
 def hasInfOrNanValues(arr):
@@ -288,3 +286,13 @@ def halfwayQuestionSanityTest(df):
 
     if(len(halfwayChangeColumns) > 0 and "order" not in df.columns):
         breakpoint()
+
+def displayValueExceptionColumn(X):
+    for col in X.columns:
+        nansFound = np.any(np.isnan(X[col]))
+        infinitesFound = np.all(np.isfinite(X[col]))
+        if (nansFound or infinitesFound):
+            print(col)
+            print("\n")
+            print(list(set(X[col])).sort())
+        break
