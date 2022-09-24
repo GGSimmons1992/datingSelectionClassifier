@@ -220,10 +220,10 @@ def getLocation(zipcode,fromLocation):
         return None
 
 def fixAmbiguousScores(df):
-    halfwayQuestionSanityTest(df)
+    halfwayQuestionSanityTest(df,"beginning of fixAmbiguousScores")
     df = redistributePoints(df)
     df = applyHalfwayChange(df)
-    halfwayQuestionSanityTest(df)
+    halfwayQuestionSanityTest(df,"end of fixAmbiguousScores")
     return df
 
 def redistributePoints(df):
@@ -249,7 +249,7 @@ def redistributePoints(df):
 
 def applyHalfwayChange(df):
     halfwayChangeColumns = [str(col) for col in df.columns if (("1_s" in str(col)) | ("3_s" in str(col)))]
-    halfwayQuestionSanityTest(df)
+    halfwayQuestionSanityTest(df,"beginning of applyHalfwayChange")
     for halfwayQuestion in halfwayChangeColumns:
         targetQuestion = ""
         if ("1_s" in halfwayQuestion):
@@ -278,13 +278,13 @@ def applyHalfwayChange(df):
                 currentMindsetAnswers.append(row[halfwayQuestion])
         df[targetQuestion] = pd.Series(currentMindsetAnswers)
     df = df.drop(halfwayChangeColumns + ["round","order"],axis = 1)
-    halfwayQuestionSanityTest(df)
+    halfwayQuestionSanityTest(df,"end of applyHalfwayChange")
     return df
 
-def halfwayQuestionSanityTest(df):
+def halfwayQuestionSanityTest(df,location):
     halfwayChangeColumns = [str(col) for col in df.columns if (("1_s" in str(col)) | ("3_s" in str(col)))]
-
     if(len(halfwayChangeColumns) > 0 and "order" not in df.columns):
+        print(location)
         breakpoint()
 
 def displayValueExceptionColumn(X):
