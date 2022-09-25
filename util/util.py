@@ -30,12 +30,13 @@ def replaceNansWithTrainingDataValues(df):
     with open('../data/processedData/trainNanReplacementValuesDictionary.json') as d:
         trainNanReplacementValuesDictionary = json.load(d)
     for col in df.columns:
+        replacementValue = 0
         if str(col) in trainNanReplacementValuesDictionary.keys():
             replacementValue = trainNanReplacementValuesDictionary[str(col)]
-            df[col] = df[col].fillna(replacementValue)
-            df[col] = df[col].replace([np.inf, -np.inf], replacementValue)
-            nanMask = np.isnan(df[col]) | (np.isfinite(df[col]) == False)
-            df.loc[nanMask,col] = replacementValue
+        df[col] = df[col].fillna(replacementValue)
+        df[col] = df[col].replace([np.inf, -np.inf], replacementValue)
+        nanMask = np.isnan(df[col]) | (np.isfinite(df[col]) == False)
+        df.loc[nanMask,col] = replacementValue
     displayValueExceptionColumn(df)
     return df
 
