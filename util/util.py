@@ -290,9 +290,10 @@ def halfwayQuestionSanityTest(df,location):
 def displayValueExceptionColumn(X):
     for col in X.columns:
         nansFound = np.any(np.isnan(X[col]))
-        infinitesFound = np.all(np.isfinite(X[col]))
+        infinitesFound = np.all(np.isfinite(X[col])) == False
         if (nansFound or infinitesFound):
             print(col)
             print("\n")
-            print(list(set(X[col])).sort())
+            sortedList = sorted(list(set(X[col])))
+            print(sortedList)
         break
