@@ -34,6 +34,9 @@ def replaceNansWithTrainingDataValues(df):
             replacementValue = trainNanReplacementValuesDictionary[str(col)]
             df[col] = df[col].fillna(replacementValue)
             df[col] = df[col].replace([np.inf, -np.inf], replacementValue)
+            nanMask = np.isnan(df[col]) | (np.isfinite(df[col]) == False)
+            df.loc[nanMask,col] = replacementValue
+    displayValueExceptionColumn(df)
     return df
 
 def hasInfOrNanValues(arr):
@@ -288,12 +291,15 @@ def halfwayQuestionSanityTest(df,location):
         breakpoint()
 
 def displayValueExceptionColumn(X):
+    turnOnBreakpoint = False
     for col in X.columns:
         nansFound = np.any(np.isnan(X[col]))
         infinitesFound = np.all(np.isfinite(X[col])) == False
         if (nansFound or infinitesFound):
+            turnOnBreakpoint = True
             print(col)
             print("\n")
             sortedList = sorted(list(set(X[col])))
             print(sortedList)
-        break
+    if turnOnBreakpoint:
+        breakpoint()
