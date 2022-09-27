@@ -5,6 +5,7 @@ import json
 import geopy
 import math
 import sklearn.linear_model as lm
+import sklearn.metrics as sm
 import matplotlib.pyplot as plt
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
@@ -304,3 +305,21 @@ def displayValueExceptionColumn(X):
             print(sortedList)
     if turnOnBreakpoint:
         breakpoint()
+
+def displayAccuracyAndRecallScores(yTest,yPredict,modelName):
+    print(f"{modelName} accuracy score: {sm.accuracy_score(yTest,yPredict)}")
+    print(f"{modelName} recall score: {sm.recall_score(yTest,yPredict)}")
+
+def displayFeatureImportances(columns,fittedModel,modelName):
+    importance = fittedModel.feature_importances_
+    featureImportance = pd.DataFrame({
+        "feature": columns,
+        "featureImportance": importance
+        },columns = ["feature","featureImportance"])
+    featureImportancesSorted = featureImportance.sort_values(by="featureImportance", ascending=False)
+    print(f'{modelName} top 10 feature importances')
+    for i in range(10):
+        featureRow = featureImportancesSorted[i,:]
+        feature = featureRow['feature']
+        featureValue = featureRow['featureImportance']
+        print(f'Rank {i}: {feature}: score: {featureValue}')
