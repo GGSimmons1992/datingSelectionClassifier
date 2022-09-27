@@ -306,9 +306,10 @@ def displayValueExceptionColumn(X):
     if turnOnBreakpoint:
         breakpoint()
 
-def displayAccuracyAndRecallScores(yTest,yPredict,modelName):
+def displayMetricScores(yTest,yPredict,modelName):
     print(f"{modelName} accuracy score: {sm.accuracy_score(yTest,yPredict)}")
     print(f"{modelName} recall score: {sm.recall_score(yTest,yPredict)}")
+    print(f"{modelName} precision score: {sm.precision_score(yTest,yPredict)}")
 
 def displayFeatureImportances(columns,fittedModel,modelName):
     importance = fittedModel.feature_importances_
