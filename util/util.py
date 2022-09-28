@@ -59,6 +59,7 @@ def joinToPartner(candidateDF,partnerFullDF):
     with open('../data/processedData/columnDataDictionary.json') as d:
         columnDataDictionary = json.load(d)
     partnerList = columnDataDictionary['partnerList']
+    nonBinaryCategoricalList = columnDataDictionary['nonBinaryCategoricalList']
     
     partner_o = partnerFullDF[['iid','pid']]
     partner_o['iid_o'] = partner_o['iid']
@@ -67,6 +68,16 @@ def joinToPartner(candidateDF,partnerFullDF):
     for col in list(partnerFullDF.columns):
         if col in partnerList:
             partner_o[str(col)+'_o'] = partnerFullDF[col]
+            if col in nonBinaryCategoricalList:
+                partner_o[str(col)+'_o'].apply(str)
+                if ((str(col)+'_o') not in nonBinaryCategoricalList and '_o_o' not in (str(col)+'_o')):
+                    nonBinaryCategoricalList.append(str(col)+'_o')
+    
+    columnDataDictionary['nonBinaryCategoricalList']
+
+    with open('../data/processedData/columnDataDictionary.json', 'w') as fp:
+            json.dump(columnDataDictionary, fp)
+    
     finalDF = pd.merge(candidateDF,partner_o,how='left',left_on=['iid','pid'],right_on=['pid_o','iid_o'])
     for finalCol in finalDF.columns:
         if "o_x" in finalCol:
@@ -320,7 +331,8 @@ def displayFeatureImportances(columns,fittedModel,modelName):
     featureImportancesSorted = featureImportance.sort_values(by="featureImportance", ascending=False)
     print(f'{modelName} top 10 feature importances')
     for i in range(10):
-        featureRow = featureImportancesSorted[i,:]
+        featureRow = featureImportancesSorted.iloc[i]
         feature = featureRow['feature']
         featureValue = featureRow['featureImportance']
         print(f'Rank {i}: {feature}: score: {featureValue}')
+    print("\n")
