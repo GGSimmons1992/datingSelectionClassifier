@@ -90,6 +90,7 @@ def joinToPartner(candidateDF,partnerFullDF):
 
 def returnDFWithpartnerDistance(df,datasetType,displayNoneNumber = False):
     milestone = datetime.datetime.now()
+    firstIteration = True
     nanCount=0
     distances = []
     if exists(f"../data/processedData/{datasetType}Distances.json"):
@@ -114,10 +115,12 @@ def returnDFWithpartnerDistance(df,datasetType,displayNoneNumber = False):
                 nanCount += 1
             if ((datetime.datetime.now() > milestone) and (displayNoneNumber)):
                 total = df.shape[0]
-                print(datetime.datetime.now().strftime('%H:%M:%S'))
-                print(f'{rowindex} of {df.shape[0]}: {rowindex*100.0/(total)}% complete')
-                print(f'{100 * nanCount/total}% of data is None')
+                if firstIteration == False:
+                    print(datetime.datetime.now().strftime('%H:%M:%S'))
+                    print(f'{rowindex} of {df.shape[0]}: {rowindex*100.0/(total)}% complete')
+                    print(f'{100 * nanCount/total}% of data is None')
                 milestone += datetime.timedelta(minutes=5)
+                firstIteration = False
                 
                 distancesDictionary = {
                     "nanCount": nanCount,
@@ -128,10 +131,17 @@ def returnDFWithpartnerDistance(df,datasetType,displayNoneNumber = False):
                     json.dump(distancesDictionary, fp)
     
     df['partnerDistance'] = pd.Series(distances)
+    
+    if displayNoneNumber:
+        print(datetime.datetime.now().strftime('%H:%M:%S'))
+        print(f'{rowindex} of {df.shape[0]}: {rowindex*100.0/(total)}% complete')
+        print(f'{100 * nanCount/total}% of data is None')
+
     return df
 
 def getLocations(df,displayNoneNumber = False):
     milestone = datetime.datetime.now()
+    firstIteration = True
     nanCount = 0
     lats = []
     lons = []
@@ -163,11 +173,12 @@ def getLocations(df,displayNoneNumber = False):
                 total = df.shape[0] * 2
                 nanList = [np.nan for lat in lats if isNan(lat)] + [np.nan for lon in lons if isNan(lon)]
                 nanCount = len(nanList)
-
-                print(datetime.datetime.now().strftime('%H:%M:%S'))
-                print(f'{rowindex} of {df.shape[0]}: {rowindex*100.0/(df.shape[0])}% complete')
-                print(f'{int(nanCount/2)} Non-Locations. {100 * nanCount/total}% of data is None')
+                if(firstIteration == False):
+                    print(datetime.datetime.now().strftime('%H:%M:%S'))
+                    print(f'{rowindex} of {df.shape[0]}: {rowindex*100.0/(df.shape[0])}% complete')
+                    print(f'{int(nanCount/2)} Non-Locations. {100 * nanCount/total}% of data is None')
                 milestone += datetime.timedelta(minutes=5)
+                firstIteration = False
                 
                 coordinatesDictionary = {
                     "nanCount": nanCount,
@@ -191,10 +202,12 @@ def getLocations(df,displayNoneNumber = False):
                     nanList = [np.nan for lat in lats if isNan(lat)] + [np.nan for lon in lons if isNan(lon)]
                     nanCount = len(nanList)
 
-                    print(datetime.datetime.now().strftime('%H:%M:%S'))
-                    print(f'{rowindex} of {df.shape[0]}: {rowindex*100.0/(df.shape[0])}% complete')
-                    print(f'{int(nanCount/2)} Non-Locations. {100 * nanCount/total}% of data is None')
+                    if(firstIteration == False):
+                        print(datetime.datetime.now().strftime('%H:%M:%S'))
+                        print(f'{rowindex} of {df.shape[0]}: {rowindex*100.0/(df.shape[0])}% complete')
+                        print(f'{int(nanCount/2)} Non-Locations. {100 * nanCount/total}% of data is None')
                     milestone += datetime.timedelta(minutes=5)
+                    firstIteration = False
                     
                     coordinatesDictionary = {
                         "nanCount": nanCount,
@@ -207,6 +220,12 @@ def getLocations(df,displayNoneNumber = False):
 
     df['lats'] = pd.Series(lats)
     df['lons'] = pd.Series(lons)
+
+    if displayNoneNumber:
+        print(datetime.datetime.now().strftime('%H:%M:%S'))
+        print(f'{rowindex} of {df.shape[0]}: {rowindex*100.0/(df.shape[0])}% complete')
+        print(f'{int(nanCount/2)} Non-Locations. {100 * nanCount/total}% of data is None')
+
     return df  
 
 def getLocation(zipcode,fromLocation):
