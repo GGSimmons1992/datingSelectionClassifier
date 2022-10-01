@@ -27,6 +27,31 @@ def isNan(x):
         return math.isnan(x) or math.isinf(x)
     return x == 'nan'
 
+def hasInfOrNanValues(arr):
+    np.isnan(arr).any()
+
+def switchNumbersAndCategoriesFromRawData(df):
+    df = castStringNumberAsFloat(df)
+    df = stringifyCategoricalColumns(df)
+    return df
+
+def castStringNumberAsFloat(df):
+    with open('../data/processedData/columnDataDictionary.json') as d:
+        columnDataDictionary = json.load(d)
+    dfColumns = df.columns
+    for col in dfColumns:
+        if str(col) in columnDataDictionary["stringToFloatList"]:
+            df[str(col)] = df[str(col)].str.replace(',', '').astype(float)
+    return df
+
+def stringifyCategoricalColumns(df):
+    with open('../data/processedData/columnDataDictionary.json') as d:
+        columnDataDictionary = json.load(d)
+    for col in list(df.columns):
+        if col in columnDataDictionary["nonBinaryCategoricalList"]:
+            df[col] = df[col].apply(str)
+    return df
+
 def replaceNansWithTrainingDataValues(df):
     with open('../data/processedData/trainNanReplacementValuesDictionary.json') as d:
         trainNanReplacementValuesDictionary = json.load(d)
@@ -41,8 +66,16 @@ def replaceNansWithTrainingDataValues(df):
     displayValueExceptionColumn(df)
     return df
 
-def hasInfOrNanValues(arr):
-    np.isnan(arr).any()
+def addDummies(df):
+    categoricalData = df.select_dtypes(include=['O'])
+    for col in categoricalData.columns:
+        df[col]=df[col].fillna('nan')
+    
+    for col in categoricalData.columns:
+        dummyData = pd.get_dummies(df[col],prefix=col,drop_first=False)
+        if len(dummyData.columns) <= 25:
+            blindDateData = pd.concat([blindDateData,dummyData],axis=1)
+    return df
 
 def plotCorrelation(x,y,title):
     model = lm.LinearRegression()
@@ -73,10 +106,10 @@ def joinToPartner(candidateDF,partnerFullDF):
                 if ((str(col)+'_o') not in nonBinaryCategoricalList and '_o_o' not in (str(col)+'_o')):
                     nonBinaryCategoricalList.append(str(col)+'_o')
     
-    columnDataDictionary['nonBinaryCategoricalList']
+    columnDataDictionary['nonBinaryCategoricalList'] = nonBinaryCategoricalList
 
     with open('../data/processedData/columnDataDictionary.json', 'w') as fp:
-            json.dump(columnDataDictionary, fp)
+        json.dump(columnDataDictionary, fp)
     
     finalDF = pd.merge(candidateDF,partner_o,how='left',left_on=['iid','pid'],right_on=['pid_o','iid_o'])
     for finalCol in finalDF.columns:
@@ -286,7 +319,8 @@ def redistributePoints(df):
 def fixExpnumAndMatches(df):
     expectedValues = ["expnum","expnum_o","match_es","match_es_o"]
     for x in expectedValues:
-        df[x] = 20 * df[x]/df["round"]
+        if x in df.columns:
+            df[x] = 20 * df[x]/df["round"]
     return df
 
 def applyHalfwayChange(df):
@@ -295,20 +329,7 @@ def applyHalfwayChange(df):
     for halfwayQuestion in halfwayChangeColumns:
         targetQuestion = ""
         if ("1_s" in halfwayQuestion):
-            if halfwayQuestion == "attr1_s_o":
-                targetQuestion = "pf_o_att"
-            elif halfwayQuestion == "sinc1_s_o":
-                targetQuestion = "pf_o_sin"
-            elif halfwayQuestion == "intel1_s_o":
-                targetQuestion = "pf_o_int"
-            elif halfwayQuestion == "fun1_s_o":
-                targetQuestion = "pf_o_fun"
-            elif halfwayQuestion == "amb1_s_o":
-                targetQuestion = "pf_o_amb"
-            elif halfwayQuestion == "shar1_s_o":
-                targetQuestion = "pf_o_sha"
-            else:
-                targetQuestion = halfwayQuestion.replace("1_s","1_1")
+            targetQuestion = halfwayQuestion.replace("1_s","1_1")
         else:
             targetQuestion = halfwayQuestion.replace("3_s","3_1")
         currentMindsetAnswers = []
@@ -319,7 +340,11 @@ def applyHalfwayChange(df):
             else:
                 currentMindsetAnswers.append(row[halfwayQuestion])
         df[targetQuestion] = pd.Series(currentMindsetAnswers)
-    df = df.drop(halfwayChangeColumns + ["round","order"],axis = 1)
+    dropColumns = halfwayChangeColumns + ["round","order"]
+    for blindDatePartnerId in ["round_o","order_o"]:
+        if blindDatePartnerId in df.columns:
+            dropColumns.append(blindDatePartnerId)
+    df = df.drop(dropColumns,axis = 1)
     halfwayQuestionSanityTest(df,"end of applyHalfwayChange")
     return df
 
