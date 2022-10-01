@@ -45,11 +45,14 @@ def castStringNumberAsFloat(df):
     return df
 
 def stringifyCategoricalColumns(df):
+    
     with open('../data/processedData/columnDataDictionary.json') as d:
         columnDataDictionary = json.load(d)
-    for col in list(df.columns):
-        if col in columnDataDictionary["nonBinaryCategoricalList"]:
-            df[col] = df[col].apply(str)
+    dfColumns = list(df.columns)
+    for col in dfColumns:
+        stringcol = str(col)
+        if stringcol in columnDataDictionary["nonBinaryCategoricalList"]:
+            df[stringcol] = df[stringcol].astype(str)
     return df
 
 def replaceNansWithTrainingDataValues(df):
@@ -74,7 +77,7 @@ def addDummies(df):
     for col in categoricalData.columns:
         dummyData = pd.get_dummies(df[col],prefix=col,drop_first=False)
         if len(dummyData.columns) <= 25:
-            blindDateData = pd.concat([blindDateData,dummyData],axis=1)
+            df = pd.concat([df,dummyData],axis=1)
     return df
 
 def plotCorrelation(x,y,title):
