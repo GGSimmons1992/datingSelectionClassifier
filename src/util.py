@@ -58,14 +58,15 @@ def stringifyCategoricalColumns(df):
 def replaceNansWithTrainingDataValues(df):
     with open('../data/processedData/trainNanReplacementValuesDictionary.json') as d:
         trainNanReplacementValuesDictionary = json.load(d)
-    for col in df.columns:
+    numericColumns = df.select_dtypes(include=['uint8','int64','float64']).columns
+    for col in numericColumns:
         replacementValue = 0
         if str(col) in trainNanReplacementValuesDictionary.keys():
             replacementValue = trainNanReplacementValuesDictionary[str(col)]
-        df[col] = df[col].fillna(replacementValue)
-        df[col] = df[col].replace([np.inf, -np.inf], replacementValue)
-        nanMask = np.isnan(df[col]) | (np.isfinite(df[col]) == False)
-        df.loc[nanMask,col] = replacementValue
+            df[col] = df[col].fillna(replacementValue)
+            df[col] = df[col].replace([np.inf, -np.inf], replacementValue)
+            nanMask = np.isnan(df[col]) | (np.isfinite(df[col]) == False)
+            df.loc[nanMask,col] = replacementValue
     displayValueExceptionColumn(df)
     return df
 
@@ -359,7 +360,7 @@ def halfwayQuestionSanityTest(df,location):
 
 def displayValueExceptionColumn(X):
     turnOnBreakpoint = False
-    for col in X.columns:
+    for col in X.select_dtypes(include=['uint8','int64','float64']).columns:
         nansFound = np.any(np.isnan(X[col]))
         infinitesFound = np.all(np.isfinite(X[col])) == False
         if (nansFound or infinitesFound):
