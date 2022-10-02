@@ -3,13 +3,17 @@ import plotly.express as px
 
 Dash.register_page(__name__)
 
+#css styles
+fullPage = {
+    "height": "95%",
+    "width": "95%"
+}
+
 layout = html.Div(children=[
-    html.H1(children='Ensemble Dash!'),
     html.H2(children=__name__),
-    html.Div(children='''
-        Dash: A web application framework for your data.
-    '''),
+    html.Div(style=fullPage,children=[
 
-    dcc.Link(html.Button("Submit Profile Edit"), href="/matches", refresh=True)
-
+    ]),
+    html.Button("Next",style={"float":"right","padding-right":"25px"},id="next"),
+    html.Button("Match up",style={"float":"right","padding-right":"25px"},id="matchup")
 ])

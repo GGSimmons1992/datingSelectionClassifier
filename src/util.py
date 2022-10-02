@@ -324,7 +324,7 @@ def fixExpnumAndMatches(df):
     expectedValues = ["expnum","expnum_o","match_es","match_es_o"]
     for x in expectedValues:
         if x in df.columns:
-            df[x] = 20 * df[x]/df["round"]
+            df[x] = round(20 * df[x]/df["round"])
     return df
 
 def applyHalfwayChange(df):
