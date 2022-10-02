@@ -391,3 +391,36 @@ def displayFeatureImportances(columns,fittedModel,modelName):
         featureValue = featureRow['featureImportance']
         print(f'Rank {i}: {feature}: score: {featureValue}')
     print("\n")
+
+def estimateIncomeByLocation(zipcode,fromLocation):
+    # DO NOT USE FOR NAN REPLACEMENT! THIS IS FOR ESTIMATING PLOTLY DASH USER INCOME BY LOCATION!!!
+    incomeByLocationDictionary = dict()
+    locationDictionary = dict()
+    defaultIncome = np.nan
+    with open("../data/incomeByLocationDictionary.json") as d:
+        incomeByLocationDictionary = json.load(d)
+    with open("../data/locations.json") as d:
+        locationDictionary = json.load(d)
+    with open("../data/processedData/trainNanReplacementValuesDictionary.json") as d:
+        defaultIncome = (json.load(d))["income"]
+    
+    candidateLocation = getLocation(zipcode,fromLocation)
+    if candidateLocation == None:
+        return defaultIncome
+
+    knownIncomes = []
+    distances = []
+    knownLocationsWithIncomes = incomeByLocationDictionary.keys()
+    for knownLocation in knownLocationsWithIncomes:
+        knownLocationCoordinates = (locationDictionary[0],locationDictionary[1])
+        distance = great_circle(candidateLocation,knownLocationCoordinates).mi
+        if distance != None:
+            knownIncomes.append(incomeByLocationDictionary[knownLocation])
+            distances.append(distance)
+    
+    distancesAndIncomes = pd.DataFrame({
+        "knownIncomes": knownIncomes,
+        "distances":distances
+    },columns=["knownIncomes","distances"])
+    closest3Incomes = distancesAndIncomes.sort_values(by="distances",ascending=True).head(3)
+    return closest3Incomes[knownIncomes].mean()
