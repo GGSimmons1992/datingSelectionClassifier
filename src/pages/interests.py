@@ -14,6 +14,6 @@ layout = html.Div(children=[
     html.Div(style=fullPage,children=[
 
     ]),
-    html.Button("Next",style={"float":"right","padding-right":"25px"},id="next"),
-    html.Button("Match up",style={"float":"right","padding-right":"25px"},id="matchup")
+    html.Button("Next",id="next"),
+    html.Button("Match up",style=hidden,id="matchup")
 ])

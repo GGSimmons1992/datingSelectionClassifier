@@ -15,6 +15,6 @@ welcome = {
 layout = html.Div(children=[
     html.H2(children=__name__),
     html.Div(style=welcome,children="Welcome to the Ensemble Dash Dating Classifier!"),
-    html.Button("Next",style={"float":"right","padding-right":"25px"},id="next"),
-    html.Button("Match up",style={"float":"right","padding-right":"25px"},id="matchup")
+    html.Button("Next",id="next"),
+    html.Button("Match up",style=hidden,id="matchup")
 ])
