@@ -1,15 +1,26 @@
 #css styles
-fullPage = {
-    "height": "95%",
-    "width": "95%"
-}
-
-col4 = {
-    "width": "32%"
+col12 = {
+    "width": "98%"
 }
 
 col6 = {
-    "width":"48%"
+    "width":str(98/2) + "%"
+}
+
+col4 = {
+    "width": str(98/3) + "%"
+}
+
+col3 = {
+    "width": str(98/4) + "%"
+}
+
+col2 = {
+    "width": str(98/6) + "%"
+}
+
+col1 = {
+    "width": str(98/12) + "%"
 }
 
 middleAndCenter = {
@@ -25,10 +36,6 @@ fitContent = {
 
 hidden = {
     "display":"hidden"
-}
-
-oneNinth = {
-    "witdh":str(95/9) + "%"
 }
 
 nostyle = {}

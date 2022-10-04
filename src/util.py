@@ -97,13 +97,14 @@ def addDummies(df):
 def plotCorrelation(x,y,title):
     model = lm.LinearRegression()
     model.fit(x,y)
+    accScore = model.score(x,y)
     m = model.coef_[0]
     b = model.intercept_
     fig = plt.figure()
     plotX = np.linspace(np.min(x),np.max(x))
     plt.scatter(x,y)
     plt.plot(plotX,m*plotX+b)
-    plt.title(f'{title} m={np.round(m,2)}, b={np.round(b,2)}')
+    plt.title(f'{title} m={np.round(m,2)}, b={np.round(b,2)},accuracy={accScore}')
     
 def joinToPartner(candidateDF,partnerFullDF):
     with open('../data/processedData/columnDataDictionary.json') as d:

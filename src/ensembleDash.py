@@ -9,7 +9,7 @@ from sklearn.ensemble import GradientBoostingClassifier as grad
 from sklearn.ensemble import RandomForestClassifier as rf
 from sklearn.tree import DecisionTreeClassifier as tree
 from sklearn.ensemble import VotingClassifier
-import sklearn.metrics as sm
+from geopy.distance import great_circle
 
 from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc
@@ -32,6 +32,12 @@ import styles
 # Train the models
 with open('../data/processedData/columnDataDictionary.json') as d:
     columnDataDictionary = json.load(d)
+    columnList = columnDataDictionary['columnList']
+    nonBinaryCategoricalList = columnDataDictionary['nonBinaryCategoricalList']
+    stringToFloatList = columnDataDictionary['stringToFloatList']
+    pointDistributionList = columnDataDictionary['pointDistributionList']
+    sharedList = columnDataDictionary['sharedList']
+    partnerList = columnDataDictionary['partnerList']
 with open("../data/processedData/dummyDictionary.json") as d:
     dummyDictionary = json.load(d)
 with open('../data/processedData/treeParams.json') as d:
@@ -41,14 +47,54 @@ with open('../data/processedData/treeParams.json') as d:
 with open('../data/processedData/forestParams.json') as d:
     forestParams = json.load(d)
     preciseForestParams = forestParams["preciseForestParams"]
-    recallForestParams = forestParams["recallForestParams"]  
+    recallForestParams = forestParams["recallForestParams"]
+with open("../data/descriptionDictionary.json") as d:
+    descriptionDictionary = json.load(d)  
 
-datingTrain = pd.read_csv('../data/plotlyDashData/datingTrain.csv')
+datingTrain = pd.read_csv('../data/processedData/datingTrain.csv')
+datingTest = pd.read_csv('../data/processedData/datingTest.csv')
+
+dropList = ["iid","pid","round","order","undergra","from","zipcode","dec"]
+featureSelectValues = [col for col in columnList if col not in dropList]
+featureSelectOptions = [
+    {"label":descriptionDictionary[col],"value":col} for col in featureSelectValues
+]
+candidateDummyList = [str(k) for k in dummyDictionary.keys()]
+partnerDummyList = [str(k)+"_o" for k in dummyDictionary.keys()]
+
+candidateFeatures = []
+partnerFeatures = []
+for col in columnList:
+    if col in partnerList:
+        candidateFeatures.append(str(col))
+        partnerFeatures.append(str(col)+"_o")
+
+#Delete after first run v
+questionDictionary = dict()
+questionDictionary["1_1"]="What do you what do you look for in a partner? (budget out of 100 points)"
+questionDictionary["4_1"]="What do you what do you think others of your gender look for in a partner? (budget out of 100 points)"
+questionDictionary["2_1"]="What do you what do you think others of the opposite gender look for in a partner? (budget out of 100 points)"
+with open("../data/questionDictionary.json","w") as fp:
+    json.dump(questionDictionary,fp)
+
+dummyValueDictionary = dict()
+for k in dummyDictionary.keys():
+    dummyCategoryDictionary = dict()
+    for dummyCol in dummyDictionary[k]:
+        print(dummyCol)
+        dummyValue = Input()
+        dummyCategoryDictionary[dummyCol]=dummyValue
+    dummyValueDictionary[k] = dummyCategoryDictionary
+with open("../data/dummyValueDictionary.json","w") as fp:
+    json.dump(dummyValueDictionary,fp)
+#Delete after first run ^
+
 match = datingTrain["match"]
 X = datingTrain.drop("match",axis=1)
-datingTest = pd.read_csv('../data/plotlyDashData/datingTest.csv')
 matchTest = datingTest["match"]
 XTest = datingTest.drop("match",axis=1) 
+
+
 
 sqrtn = int(np.sqrt(X.shape[0]))
 logModel = lm.LogisticRegression(max_iter=1e9)
@@ -97,6 +143,8 @@ nostyle = styles.nostyle
 selected = styles.selected
 unselected = styles.unselected
 hover = styles.hover
+oneNinth = styles.oneNinth
+fitContent = styles.fitContent
 
 sidebar = html.Div(
     [
@@ -118,6 +166,10 @@ app.layout = html.Div(children= [
     html.Div(style='display:content'),
     html.H1(children='Ensemble Dash!',style={"background-color":"dodgerblue"}),
     html.H2(id="pagetitle",children='Sandbox',style={"background-color":"dodgerblue"}),
+    dcc.CheckList(
+        options=[estimatorTuple[0] for estimatorTuple in originalEstimtatorTuples],
+        value=[estimatorTuple[0] for estimatorTuple in originalEstimtatorTuples]
+    ),
     Dash.page_container
 ])
 
