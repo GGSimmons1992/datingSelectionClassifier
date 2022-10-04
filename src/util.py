@@ -71,6 +71,11 @@ def replaceNansWithTrainingDataValues(df):
     return df
 
 def addDummies(df):
+    dummyDictionary = dict()
+    if exists("../data/processedData/dummyDictionary.json"):
+        with open("../data/processedData/dummyDictionary.json") as d:
+            dummyDictionary = json.load(d)
+    
     categoricalData = df.select_dtypes(include=['O'])
     for col in categoricalData.columns:
         df[col]=df[col].fillna('nan')
@@ -78,7 +83,15 @@ def addDummies(df):
     for col in categoricalData.columns:
         dummyData = pd.get_dummies(df[col],prefix=col,drop_first=False)
         if len(dummyData.columns) <= 25:
+            if col == "race": #no native americans, thus excluded from original dummification method
+                dummyData["race_5.0"] = 0 
             df = pd.concat([df,dummyData],axis=1)
+            if str(col) not in dummyDictionary.keys():
+                dummyDictionary[str(col)] = list(dummyData.columns)
+    
+    with open("../data/processedData/dummyDictionary.json","w") as fp:
+        json.dump(dummyDictionary,fp)
+
     return df
 
 def plotCorrelation(x,y,title):
