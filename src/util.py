@@ -329,7 +329,7 @@ def redistributePoints(df):
                 if isNan(row[questionSumString]) | (row[questionSumString] == 0):
                     questionValues[rowindex] = row[str(questionCol)]
                 else:
-                    questionValues[rowindex] = row[str(questionCol)] * 100 / row[questionSumString]
+                    questionValues[rowindex] = round(row[str(questionCol)] * 100.0 / row[questionSumString])
             df[str(questionCol)] = pd.Series(questionValues)
         df = df.drop(questionSumString,axis=1)
     return df

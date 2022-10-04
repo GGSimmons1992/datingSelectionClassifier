@@ -54,46 +54,10 @@ with open("../data/descriptionDictionary.json") as d:
 datingTrain = pd.read_csv('../data/processedData/datingTrain.csv')
 datingTest = pd.read_csv('../data/processedData/datingTest.csv')
 
-dropList = ["iid","pid","round","order","undergra","from","zipcode","dec"]
-featureSelectValues = [col for col in columnList if col not in dropList]
-featureSelectOptions = [
-    {"label":descriptionDictionary[col],"value":col} for col in featureSelectValues
-]
-candidateDummyList = [str(k) for k in dummyDictionary.keys()]
-partnerDummyList = [str(k)+"_o" for k in dummyDictionary.keys()]
-
-candidateFeatures = []
-partnerFeatures = []
-for col in columnList:
-    if col in partnerList:
-        candidateFeatures.append(str(col))
-        partnerFeatures.append(str(col)+"_o")
-
-#Delete after first run v
-questionDictionary = dict()
-questionDictionary["1_1"]="What do you what do you look for in a partner? (budget out of 100 points)"
-questionDictionary["4_1"]="What do you what do you think others of your gender look for in a partner? (budget out of 100 points)"
-questionDictionary["2_1"]="What do you what do you think others of the opposite gender look for in a partner? (budget out of 100 points)"
-with open("../data/questionDictionary.json","w") as fp:
-    json.dump(questionDictionary,fp)
-
-dummyValueDictionary = dict()
-for k in dummyDictionary.keys():
-    dummyCategoryDictionary = dict()
-    for dummyCol in dummyDictionary[k]:
-        print(dummyCol)
-        dummyValue = Input()
-        dummyCategoryDictionary[dummyCol]=dummyValue
-    dummyValueDictionary[k] = dummyCategoryDictionary
-with open("../data/dummyValueDictionary.json","w") as fp:
-    json.dump(dummyValueDictionary,fp)
-#Delete after first run ^
-
 match = datingTrain["match"]
 X = datingTrain.drop("match",axis=1)
 matchTest = datingTest["match"]
 XTest = datingTest.drop("match",axis=1) 
-
 
 
 sqrtn = int(np.sqrt(X.shape[0]))
