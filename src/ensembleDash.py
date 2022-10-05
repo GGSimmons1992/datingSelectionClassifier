@@ -95,8 +95,9 @@ originalEstimtatorTuples = [
     ]
 
 ensembleVote = VotingClassifier(estimators = originalEstimtatorTuples)
-
-ensembleVote.fit(X,match)
+allEstimatorTuples = [("Ensemble",ensembleVote)] + originalEstimtatorTuples
+for estimatorTuple in allEstimatorTuples:
+    (estimatorTuple[1]).fit(X,match)
 
 # Dash code
 app = Dash(__name__, use_pages=True)

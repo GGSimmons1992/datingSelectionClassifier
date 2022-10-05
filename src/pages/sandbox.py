@@ -36,13 +36,10 @@ for col in columnList:
 candidateProfile = pd.DataFrame(columns=candidateFeatures)
 partnerProfile = pd.DataFrame(columns=partnerFeatures)
 
-#Delete after first run v
 questionDictionary = dict()
 questionDictionary["1_1"]="What do you what do you look for in a partner? (budget out of 100 points)"
 questionDictionary["4_1"]="What do you what do you think others of your gender look for in a partner? (budget out of 100 points)"
 questionDictionary["2_1"]="What do you what do you think others of the opposite gender look for in a partner? (budget out of 100 points)"
-with open("../data/questionDictionary.json","w") as fp:
-    json.dump(questionDictionary,fp)
 
 dummyValueDictionary = dict()
 for k in dummyDictionary.keys():
@@ -51,9 +48,6 @@ for k in dummyDictionary.keys():
         print(dummyCol)
         dummyValue = Input()
         dummyValueDictionary[dummyCol]=dummyValue
-with open("../data/dummyValueDictionary.json","w") as fp:
-    json.dump(dummyValueDictionary,fp)
-#Delete after first run ^
 
 selectedValueIndex = int(np.random.uniform(0,len(featureSelectOptions)))
 while selectedValueIndex == len(featureSelectOptions):
@@ -78,8 +72,6 @@ for col in candidateFeatures:
     else:
         candidateProfile[col] = selectedMatch[col]
         partnerProfile[str(col)+"_o"] = selectedMatch[str(col)+"_o"]
-
-
 
 Dash.register_page(__name__,path="/")
 

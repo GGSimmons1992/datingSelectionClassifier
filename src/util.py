@@ -326,10 +326,12 @@ def redistributePoints(df):
             questionValues = [np.nan] * df.shape[0]
             for rowindex in range(df.shape[0]):
                 row = df.iloc[rowindex]
-                if isNan(row[questionSumString]) | (row[questionSumString] == 0):
+                if np.isnan(row[questionSumString]) | (row[questionSumString] == 0):
                     questionValues[rowindex] = row[str(questionCol)]
                 else:
-                    questionValues[rowindex] = round(row[str(questionCol)] * 100.0 / row[questionSumString])
+                    questionValues[rowindex] = row[str(questionCol)] * 100.0 / row[questionSumString]
+                    if ((np.isnan(questionValues[rowindex]) == False) & np.isfinite(questionValues[rowindex])):
+                        questionValues[rowindex] = round(questionValues[rowindex])
             df[str(questionCol)] = pd.Series(questionValues)
         df = df.drop(questionSumString,axis=1)
     return df
