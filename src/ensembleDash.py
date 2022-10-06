@@ -54,10 +54,11 @@ sidebar = html.Div(style=sidebarstyle,children=[
 ])
 
 app.layout = html.Div(children= [
+    dcc.Location(id='url', refresh=False),
     sidebar,
     html.Div(style=contentstyle,children=[
         html.H1(children='Ensemble Dash!',style={"background-color":"dodgerblue"}),
-        html.H2(id="pagetitle",children='Sandbox',style={"background-color":"dodgerblue"}),
+        html.H2(id="pagetitle",style={"background-color":"dodgerblue"}),
         dcc.Checklist(
             id="modelSelection",
             options=[estimatorTuple[0] for estimatorTuple in originalEstimtatorTuples],
@@ -67,6 +68,14 @@ app.layout = html.Div(children= [
     ])
     
 ])
+
+@dash.callback(
+    Output('pagetitle','children'),
+    Input('url', 'pathname'))
+def updatePageTitle(pathname):
+    if pathname.lower() == "sandbox" or pathname.lower() == "/":
+        return "Sandbox"
+    return "Matchmakers"
 
 #modelSection callback
 @dash.callback(

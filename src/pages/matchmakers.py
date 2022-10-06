@@ -15,7 +15,7 @@ metricsTable = preprocess.metricsTable
 significantFeaturesDictionary = preprocess.significantFeaturesDictionary
 
 
-dash.register_page(__name__,path="/")
+dash.register_page(__name__)
 
 col12 = styles.col12
 col6 = styles.col6

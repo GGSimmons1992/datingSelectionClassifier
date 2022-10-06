@@ -14,7 +14,7 @@ candidateFeatures = preprocess.candidateFeatures
 partnerProfile = preprocess.partnerProfile
 partnerFeatures = preprocess.partnerFeatures
 
-dash.register_page(__name__)
+dash.register_page(__name__,path="/")
 
 col12 = styles.col12
 col6 = styles.col6
