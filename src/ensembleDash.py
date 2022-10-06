@@ -35,7 +35,7 @@ fitContent = styles.fitContent
 sidebarstyle = styles.SIDEBAR_STYLE
 contentstyle = styles.CONTENT_STYLE
 displayHidden = styles.displayHidden
-displayInlineBlock = styles.displayInlineBlock
+displayBlock = styles.displayBlock
 
 sidebar = html.Div(style=sidebarstyle,children=[
     dbc.Nav(
@@ -89,7 +89,7 @@ def updateEnsembleInfo(models):
     if len(models)==0:
         models = [modelTuple[0] for modelTuple in originalEstimtatorTuples]
     else:
-        hide=displayInlineBlock
+        hide=displayBlock
     if ("logModel" in models):
         premod = lm.LogisticRegression(max_iter=1e9)
         mod = make_pipeline(StandardScaler(), premod)
@@ -155,7 +155,7 @@ def updateEnsembleInfo(models):
 def updatelogModelInfo(models):
     hideValue = displayHidden
     if "logModel" in models:
-        hideValue = displayInlineBlock
+        hideValue = displayBlock
     return hideValue
 
 @dash.callback(
@@ -164,7 +164,7 @@ def updatelogModelInfo(models):
 def updateknn5Info(models):
     hideValue = displayHidden
     if "knn5" in models:
-        hideValue = displayInlineBlock
+        hideValue = displayBlock
     return hideValue
 
 @dash.callback(
@@ -173,7 +173,7 @@ def updateknn5Info(models):
 def updateknnsqrtnInfo(models):
     hideValue = displayHidden
     if "knnsqrtn" in models:
-        hideValue = displayInlineBlock
+        hideValue = displayBlock
     return hideValue
 
 @dash.callback(
@@ -182,7 +182,7 @@ def updateknnsqrtnInfo(models):
 def updategradientdeciInfo(models):
     hideValue = displayHidden
     if "gradientdeci" in models:
-        hideValue = displayInlineBlock
+        hideValue = displayBlock
     return hideValue
 
 @dash.callback(
@@ -191,7 +191,7 @@ def updategradientdeciInfo(models):
 def updategradientdekaInfo(models):
     hideValue = displayHidden
     if "gradientdeka" in models:
-        hideValue = displayInlineBlock
+        hideValue = displayBlock
     return hideValue
 
 @dash.callback(
@@ -200,7 +200,7 @@ def updategradientdekaInfo(models):
 def updaterecallTreeInfo(models):
     hideValue = displayHidden
     if "recallTree" in models:
-        hideValue = displayInlineBlock
+        hideValue = displayBlock
     return hideValue
 
 @dash.callback(
@@ -209,7 +209,7 @@ def updaterecallTreeInfo(models):
 def updatepreciseTreeInfo(models):
     hideValue = displayHidden
     if "preciseTree" in models:
-        hideValue = displayInlineBlock
+        hideValue = displayBlock
     return hideValue
 
 @dash.callback(
@@ -218,7 +218,7 @@ def updatepreciseTreeInfo(models):
 def updaterecallForestInfo(models):
     hideValue = displayHidden
     if "recallForest" in models:
-        hideValue = displayInlineBlock
+        hideValue = displayBlock
     return hideValue
 
 @dash.callback(
@@ -227,7 +227,7 @@ def updaterecallForestInfo(models):
 def updatepreciseForestInfo(models):
     hideValue = displayHidden
     if "preciseForest" in models:
-        hideValue = displayInlineBlock
+        hideValue = displayBlock
     return hideValue
 
 #sandbox callbacks

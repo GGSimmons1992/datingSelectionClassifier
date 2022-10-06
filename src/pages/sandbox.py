@@ -17,11 +17,12 @@ partnerFeatures = preprocess.partnerFeatures
 dash.register_page(__name__,path="/")
 
 col12 = styles.col12
+col8 = styles.col8
 col6 = styles.col6
 col4 = styles.col4
 col3 = styles.col3
 fitContent = styles.fitContent
-displayInlineBlock = styles.displayInlineBlock
+displayBlock = styles.displayBlock
 
 featureSelect = dcc.Dropdown(
     id="featureSelect",
@@ -29,17 +30,17 @@ featureSelect = dcc.Dropdown(
     value=[]
 )
 
-featureNumber = html.Div(id='featureNumber',style=displayInlineBlock,children=[
+featureNumber = html.Div(id='featureNumber',style=displayBlock,children=[
     html.Span(id="featureNumberLabel"),
     dcc.Input(id="featureNumberInput",type="number")
 ])
 
-featureDropdown = html.Div(id='featureNumber',style=displayInlineBlock,children=[
+featureDropdown = html.Div(id='featureNumber',style=displayBlock,children=[
     html.Span(id="featureNumberLabel"),
     dcc.Dropdown(id='featureDropdownInput')
 ])
 
-featureQuestion = html.Div(id='featureQuestion',style=displayInlineBlock,children=[
+featureQuestion = html.Div(id='featureQuestion',style=displayBlock,children=[
     html.Div(id="question"),
     html.Div("attractiveness"),
     dcc.Input(id="attr",type="number"),
@@ -66,34 +67,35 @@ questionModal = dbc.Modal(id='modal',children=[
 layout = html.Div(style=col12,children=[
     html.Div(children=[
         html.Div(style=col4,children=[
-            html.H3(children="What do you want to examine"),
+            html.H3(style=displayBlock,children="What do you want to examine"),
             featureSelect
         ]),
-        html.H3("Calculated Values: Edit profile traits to change these"),
-        html.Div(style=fitContent),
-        html.Div(style=col4,children=[
-            html.Div(title=descriptionDictionary["partnerDistance"],children=[
-                html.Span(children="Partner Distance: "),
-                html.Span(id="partnerDistance",children=str(round(selectedMatch["partnerDistance"]))),
-                html.Span(children="miles")
+        html.Div(style=col8,children=[
+            html.H3(style=col12,children="Calculated Values: Edit profile traits to change these"),
+            html.Div(style=col6,children=[
+                html.Div(style=col12,title=descriptionDictionary["partnerDistance"],children=[
+                    html.Span(children="Partner Distance: "),
+                    html.Span(id="partnerDistance",children=str(round(selectedMatch["partnerDistance"]))),
+                    html.Span(children="miles")
+                ]),
+                html.Div(style=col12,title=descriptionDictionary["samerace"],children=[
+                    html.Span(children="Same race?: "),
+                    html.Span(id="samerace",children = "yes" if (selectedMatch["samerace"]==1) else "no")
+                ])
             ]),
-            html.Div(title=descriptionDictionary["samerace"],children=[
-                html.Span(children="Same race?: "),
-                html.Span(id="samerace",children = 
-                "yes" if (selectedMatch["samerace"]==1) else "no")
+            html.Div(style=col6,children=[
+                html.Div(style=col6,id="sharedInterestsValue",children=[
+                    html.Span(children="Shared Interest Correlation:"),
+                    html.Span(id="int_corr",children=selectedMatch["int_corr"])
+                ]),
+                html.Div(style=col6,children=dcc.Graph(style=col12,id="sharedInterestsGraph"))
             ])
-        ]),
-        html.Div(style=col4,children=[
-            html.Div(id="sharedInterestsValue",children=[
-                html.Span(children="Shared Interest Correlation:"),
-                html.Span(id="int_corr",children=selectedMatch["int_corr"])
-            ]),
-            html.Div(children=dcc.Graph(id="sharedInterestsGraph"))
         ])
+        
     ]),
     html.Div(children=[
         html.Div(style=col3,children=[
-            html.H3("candidate features"),
+            html.H3(style=displayBlock,children="candidate features"),
             html.Div(children=[
                 html.Div(id=str(col)+"Display",title=descriptionDictionary[col],children = [
                     html.Span(children=f"{col}: "),
@@ -107,7 +109,7 @@ layout = html.Div(style=col12,children=[
             html.Div(children=dcc.Graph(style=col12,id="diversityGraph"))
         ]),
         html.Div(style=col3,children=[
-            html.H3("partner features"),
+            html.H3(style=displayBlock,children="partner features"),
             html.Div(children=[
                 html.Div(id=str(col)+"Edit",title=descriptionDictionary[col],children = [
                     html.Span(children=f"{col}: "),
