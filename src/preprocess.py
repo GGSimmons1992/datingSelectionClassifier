@@ -110,7 +110,7 @@ for modelTuple in allEstimatorTuples:
     recallScores.append(recallScore)
     precisionScores.append(precisionScore)
     matrixDictionary[modelTuple[0]] = px.imshow(confusionMatrix,
-    labels=dict(x="Actual", y="Predicted", color="Productivity"),
+    labels=dict(x="Actual", y="Predicted"),
     x=['Match Fail', 'Match Success'],
     y=['Match Fail', 'Match Success'],
     text_auto=True)

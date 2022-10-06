@@ -76,11 +76,11 @@ app.layout = html.Div(children= [
     Input('modelSelection', 'value'))
 def updateEnsembleInfo(models):
     includedModels = []
-    hide=True
+    hide=displayHidden
     if len(models)==0:
         models = [modelTuple[0] for modelTuple in originalEstimtatorTuples]
     else:
-        hide=False
+        hide=displayInlineBlock
     if ("logModel" in models):
         premod = lm.LogisticRegression(max_iter=1e9)
         mod = make_pipeline(StandardScaler(), premod)
@@ -129,17 +129,16 @@ def updateEnsembleInfo(models):
     precisionScore = precision_score(matchTest,ypredict)
 
     cm = px.imshow(confusionMatrix,
-    labels=dict(x="Actual", y="Predicted", color="Productivity"),
-                x=['Match Fail', 'Match Success'],
-                y=['Match Fail', 'Match Success'],
+    labels=dict(x="Actual", y="Predicted"),
+    x=['Match Fail', 'Match Success'],
+    y=['Match Fail', 'Match Success'],
     text_auto=True)
     metrics=go.Figure(go.Bar(
         x=[accuracyScore,recallScore,precisionScore], 
         y=["accuracy","recall","precision"],
         orientation='h',
         hovertext=["accuracy","recall","precision"]))
-
-    return cm,metrics
+    return cm,metrics,hide
 
 @dash.callback(
     Output('logModelInfo','style'),
