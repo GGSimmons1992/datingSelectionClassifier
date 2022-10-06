@@ -11,7 +11,6 @@ from sklearn.tree import DecisionTreeClassifier as tree
 from sklearn.ensemble import VotingClassifier
 from sklearn.metrics import confusion_matrix,accuracy_score,recall_score,precision_score
 import plotly.express as px
-from bdb import Breakpoint
 
 #General code (from ensembleDash.py)
 # Train the models
@@ -109,11 +108,7 @@ for modelTuple in allEstimatorTuples:
     accuracyScores.append(accuracyScore)
     recallScores.append(recallScore)
     precisionScores.append(precisionScore)
-    matrixDictionary[modelTuple[0]] = px.imshow(confusionMatrix,
-    labels=dict(x="Actual", y="Predicted"),
-    x=['Match Fail', 'Match Success'],
-    y=['Match Fail', 'Match Success'],
-    text_auto=True)
+    matrixDictionary[modelTuple[0]] = confusionMatrix.tolist()
 
     if "log" in modelTuple[0]:
         coefficients = [coef for coef in (modelTuple[1]).named_steps['logisticregression'].coef_.reshape(-1,)]
@@ -217,3 +212,28 @@ for col in selectedMatchDF.columns:
         else:
             candidateProfile[col] = selectedMatch[col]
             partnerProfile[str(col)+"_o"] = selectedMatch[str(col)+"_o"]
+
+# store into json collections
+
+matchmakerCollection = dict()
+matchmakerCollection["modelDescriptionDictionary"] = modelDescriptionDictionary
+matchmakerCollection["matrixDictionary"] = matrixDictionary
+matchmakerCollection["metricsTable"] = metricsTable
+matchmakerCollection["significantFeaturesDictionary"] = significantFeaturesDictionary
+with open("../data/plotlyDashData/matchmakerCollection.json","w") as fp:
+    json.dump(matchmakerCollection,fp)
+
+sandboxCollection = dict()
+sandboxCollection["featureSelectOptions"] = featureSelectOptions
+sandboxCollection["selectedValue"] = selectedValue
+sandboxCollection["descriptionDictionary"] = descriptionDictionary
+sandboxCollection["selectedMatch"] = selectedMatch.to_list()
+sandboxCollection["candidateFeatures"] = candidateFeatures
+sandboxCollection["partnerFeatures"] = partnerFeatures
+sandboxCollection["questionDictionary"] = questionDictionary
+with open("../data/plotlyDashData/sandboxCollection.json","w") as fp:
+    json.dump(sandboxCollection,fp)
+
+
+candidateProfile.to_csv("../data/plotlyDashData/candidateProfile.csv",index=False)
+partnerProfile.to_csv("../data/plotlyDashData/partnerProfile.csv",index=False)

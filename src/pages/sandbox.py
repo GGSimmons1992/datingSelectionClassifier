@@ -1,18 +1,23 @@
+import pandas as pd
+import json
 import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import styles
-import preprocess
 
-featureSelectOptions = preprocess.featureSelectOptions
-selectedValue = preprocess.selectedValue
-descriptionDictionary = preprocess.descriptionDictionary
-selectedMatch = preprocess.selectedMatch
-candidateProfile = preprocess.candidateProfile
-candidateFeatures = preprocess.candidateFeatures
-partnerProfile = preprocess.partnerProfile
-partnerFeatures = preprocess.partnerFeatures
+with open("../data/plotlyDashData/sandboxCollection.json") as d:
+    sandboxCollection = json.load(d)
+    featureSelectOptions = sandboxCollection["featureSelectOptions"]
+    selectedValue = sandboxCollection["selectedValue"]
+    descriptionDictionary = sandboxCollection["descriptionDictionary"]
+    selectedMatch = pd.Series(sandboxCollection["selectedMatch"])
+    candidateFeatures = sandboxCollection["candidateFeatures"]
+    partnerFeatures = sandboxCollection["partnerFeatures"]
+    questionDictionary  = sandboxCollection["questionDictionary"]
+
+candidateProfile = pd.read_csv("../data/plotlyDashData/candidateProfile.csv")
+partnerProfile = pd.read_csv("../data/plotlyDashData/partnerProfile.csv")
 
 dash.register_page(__name__,path="/")
 

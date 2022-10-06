@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+import json
 import sklearn.linear_model as lm
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -13,18 +16,63 @@ import styles
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import plotly.graph_objects as go
-import preprocess
 
-originalEstimtatorTuples = preprocess.originalEstimtatorTuples
-sqrtn = preprocess.sqrtn
-recallTreeParams = preprocess.recallTreeParams
-preciseTreeParams = preprocess.preciseTreeParams
-recallForestParams = preprocess.recallForestParams
-preciseForestParams = preprocess.preciseForestParams
-X = preprocess.X
-match = preprocess.match
-XTest = preprocess.XTest
-matchTest = preprocess.matchTest
+datingTrain = pd.read_csv('../data/plotlyDashData/datingTrain.csv')
+datingTest = pd.read_csv('../data/plotlyDashData/datingTest.csv')
+
+match = datingTrain["match"]
+X = datingTrain.drop("match",axis=1).select_dtypes(include=['uint8','int64','float64'])
+matchTest = datingTest["match"]
+XTest = datingTest.drop("match",axis=1).select_dtypes(include=['uint8','int64','float64'])
+
+with open('../data/processedData/treeParams.json') as d:
+    treeParams = json.load(d)
+    preciseTreeParams = treeParams["preciseTreeParams"]
+    recallTreeParams = treeParams["recallTreeParams"]
+with open('../data/processedData/forestParams.json') as d:
+    forestParams = json.load(d)
+    preciseForestParams = forestParams["preciseForestParams"]
+    recallForestParams = forestParams["recallForestParams"]
+sqrtn = int(np.sqrt(X.shape[0]))
+logModel = lm.LogisticRegression(max_iter=1e9)
+logPipe = make_pipeline(StandardScaler(), logModel)
+knn5 = knn(n_neighbors=5)
+knnsqrtn = knn(n_neighbors=sqrtn)
+gradientdeci = grad(learning_rate=0.1)
+gradientdeka = grad(learning_rate=10)
+preciseTree = tree(criterion = preciseTreeParams["criterion"],
+                    max_depth = preciseTreeParams["max_depth"],
+                    max_features = preciseTreeParams["max_features"])
+recallTree = tree(criterion = recallTreeParams["criterion"],
+                  max_depth = recallTreeParams["max_depth"],
+                  max_features = recallTreeParams["max_features"])
+preciseForest = rf(n_estimators = preciseForestParams["n_estimators"],
+                    criterion = preciseForestParams["criterion"],
+                    max_depth = preciseForestParams["max_depth"],
+                    max_features = preciseForestParams["max_features"])
+recallForest = rf(n_estimators = recallForestParams["n_estimators"],
+                  criterion = recallForestParams["criterion"],
+                  max_depth = recallForestParams["max_depth"],
+                  max_features = recallForestParams["max_features"])
+
+originalEstimtatorTuples = [
+        ("logModel",logPipe),
+        ("knn5",knn5),
+        ("knnsqrtn",knnsqrtn),
+        ("gradientdeci",gradientdeci),
+        ("gradientdeka",gradientdeka),
+        ("preciseTree",preciseTree),
+        ("recallTree",recallTree),
+        ("preciseForest",preciseForest),
+        ("recallForest",recallForest)
+    ]
+
+ensembleVote = VotingClassifier(estimators = originalEstimtatorTuples)
+allEstimatorTuples = [("Ensemble",ensembleVote)] + originalEstimtatorTuples
+
+for estimatorTuple in allEstimatorTuples:
+    (estimatorTuple[1]).fit(X,match)
+
 # Dash code
 app = Dash(__name__, use_pages=True)
 
