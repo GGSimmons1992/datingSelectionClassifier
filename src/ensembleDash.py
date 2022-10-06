@@ -34,6 +34,8 @@ unselected = styles.unselected
 fitContent = styles.fitContent
 sidebarstyle = styles.SIDEBAR_STYLE
 contentstyle = styles.CONTENT_STYLE
+displayHidden = styles.displayHidden
+displayInlineBlock = styles.displayInlineBlock
 
 sidebar = html.Div(style=sidebarstyle,children=[
     dbc.Nav(
@@ -70,15 +72,15 @@ app.layout = html.Div(children= [
 @dash.callback(
     Output('EnsembleMatrix', 'figure'),
     Output('EnsembleMetrics', 'figure'),
-    Output('EnsembleInfo','hidden'),
+    Output('EnsembleInfo','style'),
     Input('modelSelection', 'value'))
 def updateEnsembleInfo(models):
     includedModels = []
-    hide="hidden"
+    hide=True
     if len(models)==0:
         models = [modelTuple[0] for modelTuple in originalEstimtatorTuples]
     else:
-        hide=""
+        hide=False
     if ("logModel" in models):
         premod = lm.LogisticRegression(max_iter=1e9)
         mod = make_pipeline(StandardScaler(), premod)
@@ -140,84 +142,84 @@ def updateEnsembleInfo(models):
     return cm,metrics
 
 @dash.callback(
-    Output('logModelInfo','hidden'),
+    Output('logModelInfo','style'),
     Input('modelSelection', 'value'))
 def updatelogModelInfo(models):
-    hideValue = "hidden"
+    hideValue = displayHidden
     if "logModel" in models:
-        hideValue = ""
+        hideValue = displayInlineBlock
     return hideValue
 
 @dash.callback(
-    Output('knn5Info','hidden'),
+    Output('knn5Info','style'),
     Input('modelSelection', 'value'))
 def updateknn5Info(models):
-    hideValue = "hidden"
+    hideValue = displayHidden
     if "knn5" in models:
-        hideValue = ""
+        hideValue = displayInlineBlock
     return hideValue
 
 @dash.callback(
-    Output('knnsqrtnInfo','hidden'),
+    Output('knnsqrtnInfo','style'),
     Input('modelSelection', 'value'))
 def updateknnsqrtnInfo(models):
-    hideValue = "hidden"
+    hideValue = displayHidden
     if "knnsqrtn" in models:
-        hideValue = ""
+        hideValue = displayInlineBlock
     return hideValue
 
 @dash.callback(
-    Output('gradientdeciInfo','hidden'),
+    Output('gradientdeciInfo','style'),
     Input('modelSelection', 'value'))
 def updategradientdeciInfo(models):
-    hideValue = "hidden"
+    hideValue = displayHidden
     if "gradientdeci" in models:
-        hideValue = ""
+        hideValue = displayInlineBlock
     return hideValue
 
 @dash.callback(
-    Output('gradientdekaInfo','hidden'),
+    Output('gradientdekaInfo','style'),
     Input('modelSelection', 'value'))
 def updategradientdekaInfo(models):
-    hideValue = "hidden"
+    hideValue = displayHidden
     if "gradientdeka" in models:
-        hideValue = ""
+        hideValue = displayInlineBlock
     return hideValue
 
 @dash.callback(
-    Output('recallTreeInfo','hidden'),
+    Output('recallTreeInfo','style'),
     Input('modelSelection', 'value'))
 def updaterecallTreeInfo(models):
-    hideValue = "hidden"
+    hideValue = displayHidden
     if "recallTree" in models:
-        hideValue = ""
+        hideValue = displayInlineBlock
     return hideValue
 
 @dash.callback(
-    Output('preciseTreeInfo','hidden'),
+    Output('preciseTreeInfo','style'),
     Input('modelSelection', 'value'))
 def updatepreciseTreeInfo(models):
-    hideValue = "hidden"
+    hideValue = displayHidden
     if "preciseTree" in models:
-        hideValue = ""
+        hideValue = displayInlineBlock
     return hideValue
 
 @dash.callback(
-    Output('recallForestInfo','hidden'),
+    Output('recallForestInfo','style'),
     Input('modelSelection', 'value'))
 def updaterecallForestInfo(models):
-    hideValue = "hidden"
+    hideValue = displayHidden
     if "recallForest" in models:
-        hideValue = ""
+        hideValue = displayInlineBlock
     return hideValue
 
 @dash.callback(
-    Output('preciseForestInfo','hidden'),
+    Output('preciseForestInfo','style'),
     Input('modelSelection', 'value'))
 def updatepreciseForestInfo(models):
-    hideValue = "hidden"
+    hideValue = displayHidden
     if "preciseForest" in models:
-        hideValue = ""
+        hideValue = displayInlineBlock
     return hideValue
 
 #sandbox callbacks

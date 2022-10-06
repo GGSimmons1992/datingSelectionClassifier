@@ -21,6 +21,7 @@ col6 = styles.col6
 col4 = styles.col4
 col3 = styles.col3
 fitContent = styles.fitContent
+displayInlineBlock = styles.displayInlineBlock
 
 featureSelect = dcc.Dropdown(
     id="featureSelect",
@@ -28,17 +29,17 @@ featureSelect = dcc.Dropdown(
     value=[]
 )
 
-featureNumber = html.Div(id='featureNumber',hidden="hidden",children=[
+featureNumber = html.Div(id='featureNumber',style=displayInlineBlock,children=[
     html.Span(id="featureNumberLabel"),
     dcc.Input(id="featureNumberInput",type="number")
 ])
 
-featureDropdown = html.Div(id='featureNumber',hidden="hidden",children=[
+featureDropdown = html.Div(id='featureNumber',style=displayInlineBlock,children=[
     html.Span(id="featureNumberLabel"),
     dcc.Dropdown(id='featureDropdownInput')
 ])
 
-featureQuestion = html.Div(id='featureQuestion',hidden="hidden",children=[
+featureQuestion = html.Div(id='featureQuestion',style=displayInlineBlock,children=[
     html.Div(id="question"),
     html.Div("attractiveness"),
     dcc.Input(id="attr",type="number"),

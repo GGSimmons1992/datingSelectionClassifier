@@ -46,6 +46,14 @@ unselected = {
     "background-color":"gainsboro"
 }
 
+displayHidden = {
+    "display":"hidden"
+}
+
+displayInlineBlock = {
+    "display":"inline-block"
+}
+
 SIDEBAR_STYLE = {
     "position": "fixed",
     "top": 0,

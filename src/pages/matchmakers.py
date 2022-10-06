@@ -19,10 +19,12 @@ dash.register_page(__name__,path="/")
 
 col12 = styles.col12
 col6 = styles.col6
+displayInlineBlock = styles.displayInlineBlock
+
 modelInfoList = []
 for modelInfo in allEstimatorTuples:
     if modelInfo[0] == "Ensemble" or "knn" in modelInfo[0]:
-        modInfoLayout = html.Div(id=modelInfo[0] + "Info",children=[
+        modInfoLayout = html.Div(style=displayInlineBlock,id=modelInfo[0] + "Info",children=[
             html.Div(children=[
             html.Div(style=col6,children=html.H3(children=modelInfo[0])),
             html.Div(style=col6,children=html.P(children=modelDescriptionDictionary[modelInfo[0]]))
@@ -42,7 +44,7 @@ for modelInfo in allEstimatorTuples:
             ])
         ])
     else:
-        modInfoLayout = html.Div(id=modelInfo[0] + "Info",children=[
+        modInfoLayout = html.Div(style=displayInlineBlock,id=modelInfo[0] + "Info",children=[
             html.Div(children=[
             html.Div(style=col6,children=html.H3(children=modelInfo[0])),
             html.Div(style=col6,children=html.P(children=modelDescriptionDictionary[modelInfo[0]]))
