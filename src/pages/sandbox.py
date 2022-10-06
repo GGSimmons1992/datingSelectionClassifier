@@ -31,7 +31,7 @@ partnerDummyList = [str(k)+"_o" for k in dummyDictionary.keys()]
 
 candidateFeatures = []
 partnerFeatures = []
-for col in columnList:
+for col in featureSelectValues:
     if col in partnerList:
         candidateFeatures.append(str(col))
         partnerFeatures.append(str(col)+"_o")
@@ -76,7 +76,7 @@ for col in selectedMatchDF.columns:
             candidateProfile[col] = selectedMatch[col]
             partnerProfile[str(col)+"_o"] = selectedMatch[str(col)+"_o"]
 
-#dash.register_page(__name__,path="/")
+dash.register_page(__name__)
 
 hidden = styles.hidden
 col12 = styles.col12
@@ -117,7 +117,7 @@ featureQuestion = html.Div(id='featureQuestion',style=hidden,children=[
     html.Button(id="submitQuestion",children="submit")
 ])
 
-modal = dcc.Modal(id='modal',children=[
+modal = dbc.Modal(id='modal',children=[
     featureNumber,
     featureDropdown,
     featureQuestion

@@ -11,6 +11,7 @@ from sklearn.tree import DecisionTreeClassifier as tree
 from sklearn.ensemble import VotingClassifier
 from geopy.distance import great_circle
 from sklearn.metrics import confusion_matrix,accuracy_score,recall_score,precision_score
+import dash
 from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc
 import plotly.express as px
@@ -101,43 +102,48 @@ for estimatorTuple in allEstimatorTuples:
 # Dash code
 app = Dash(__name__, use_pages=True)
 
-centerMiddle = styles.centerMiddle
+middleAndCenter = styles.middleAndCenter
 hidden = styles.hidden
 nostyle = styles.nostyle
 selected = styles.selected
 unselected = styles.unselected
-hover = styles.hover
-oneNinth = styles.oneNinth
 fitContent = styles.fitContent
+sidebarstyle = styles.SIDEBAR_STYLE
 
-sidebar = html.Div(
-    [
-        dbc.Nav(
-            [
-                html.Div(style=unselected,children="Sandbox",id="sandboxtab"),
-                html.Div(style=selected,children="Matchmakers",id="matchesmakerstab")
-            ],
-            vertical=True,
-            pills=True,
-        ),
-    ],
-    style={"background-color":"gainsboro"}
-)
-
-app.layout = html.Div(children= [
-    html.Div(style='display:content'),
-    html.H1(children='Ensemble Dash!',style={"background-color":"dodgerblue"}),
-    html.H2(id="pagetitle",children='Sandbox',style={"background-color":"dodgerblue"}),
-    dcc.CheckList(
-        id="modelSelection",
-        options=[estimatorTuple[0] for estimatorTuple in originalEstimtatorTuples],
-        value=[estimatorTuple[0] for estimatorTuple in originalEstimtatorTuples]
-    ),
-    Dash.page_container
+sidebar = html.Div(style=sidebarstyle,children=[
+    dbc.Nav(
+        [
+            dbc.NavLink(
+                [
+                    html.Div(page["name"], className="ms-2"),
+                ],
+                href=page["path"],
+                active="exact"
+            ) for page in dash.page_registry.values()
+        ],
+        vertical=True,
+        pills=True
+    )
 ])
 
+app.layout = html.Div(children= [
+    sidebar,
+    html.Div(children=[
+        html.H1(children='Ensemble Dash!',style={"background-color":"dodgerblue"}),
+        html.H2(id="pagetitle",children='Sandbox',style={"background-color":"dodgerblue"}),
+        dcc.Checklist(
+            id="modelSelection",
+            options=[estimatorTuple[0] for estimatorTuple in originalEstimtatorTuples],
+            value=[estimatorTuple[0] for estimatorTuple in originalEstimtatorTuples]
+        ),
+        dash.page_container
+    ])
+    
+])
+print("I'm hit")
+
 #modelSection callback
-@Dash.callback(
+@dash.callback(
     Output('EnsembleMatrix', 'figure'),
     Output('EnsembleMetrics', 'figure'),
     Output('logModelInfo', 'style'),
