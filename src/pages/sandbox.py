@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
+from os.path import exists
 import json
-from dash import Dash, html, dcc, Input, Output
+import dash
+from dash import html, dcc
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import styles
@@ -18,7 +20,8 @@ originalEstimtatorTuples = ensembleDash.originalEstimtatorTuples
 #candidateFeatures = ensembleDash.candidateFeatures
 #partnerFeatures = ensembleDash.partnerFeatures
 
-dropList = ["iid","pid","round","order","undergra","from","zipcode","dec"]
+halfwayQuestions = [col for col in columnList if (("1_s" in col)|("3_s" in col))]
+dropList = ["iid","pid","round","order","undergra","from","zipcode","dec"] + halfwayQuestions
 featureSelectValues = [col for col in columnList if col not in dropList]
 featureSelectOptions = [
     {"label":descriptionDictionary[col],"value":col} for col in featureSelectValues
@@ -42,12 +45,8 @@ questionDictionary["4_1"]="What do you what do you think others of your gender l
 questionDictionary["2_1"]="What do you what do you think others of the opposite gender look for in a partner? (budget out of 100 points)"
 
 dummyValueDictionary = dict()
-for k in dummyDictionary.keys():
-    dummyCategoryDictionary = dict()
-    for dummyCol in dummyDictionary[k]:
-        print(dummyCol)
-        dummyValue = Input()
-        dummyValueDictionary[dummyCol]=dummyValue
+with open("../data/dummyValueDictionary.json") as d:
+    dummyValueDictionary = json.load(d)
 
 selectedValueIndex = int(np.random.uniform(0,len(featureSelectOptions)))
 while selectedValueIndex == len(featureSelectOptions):
@@ -59,21 +58,25 @@ selectedMatchIndex = int(np.random.uniform(0,datingTest.shape[0]))
 while selectedMatchIndex == datingTest.shape[0]:
     selectedMatchIndex = int(np.random.uniform(0,datingTest.shape[0]))
 
+selectedMatchDF = datingTest.iloc[[selectedMatchIndex]]
 selectedMatch = datingTest.iloc[selectedMatchIndex]
+for col in selectedMatchDF.columns:
+    if col in candidateProfile.columns:
+        if col in candidateDummyList:
+            dummyCols = dummyDictionary[col]
+            for dummyCol in dummyCols:
+                if selectedMatch[dummyCol] == 1:
+                    candidateProfile[col] = dummyValueDictionary[dummyCol]
+                if selectedMatch[str(dummyCol)+"_o"] == 1:
+                    partnerProfile[str(dummyCol)+"_o"] = dummyValueDictionary[str(dummyCol)+"_o"]
+        elif col=="gender":
+            candidateProfile[col] = "female" if selectedMatch[col] == 0 else "male"
+            partnerProfile[col+"_o"] = "female" if selectedMatch[col+"_o"] == 0 else "male"
+        else:
+            candidateProfile[col] = selectedMatch[col]
+            partnerProfile[str(col)+"_o"] = selectedMatch[str(col)+"_o"]
 
-for col in candidateFeatures:
-    if col in candidateDummyList:
-        dummyCols = dummyDictionary[col]
-        for dummyCol in dummyCols:
-            if selectedMatch[dummyCol] == 1:
-                candidateProfile[col] = dummyValueDictionary[dummyCol]
-            if selectedMatch[str(dummyCol)+"_o"] == 1:
-                partnerProfile[str(dummyCol)+"_o"] = dummyValueDictionary[str(dummyCol)+"_o"]
-    else:
-        candidateProfile[col] = selectedMatch[col]
-        partnerProfile[str(col)+"_o"] = selectedMatch[str(col)+"_o"]
-
-Dash.register_page(__name__,path="/")
+#dash.register_page(__name__,path="/")
 
 hidden = styles.hidden
 col12 = styles.col12
@@ -109,7 +112,7 @@ featureQuestion = html.Div(id='featureQuestion',style=hidden,children=[
     html.Br,
     html.Div(children=[
         "total = ",
-        html.span(id="questionTotal",children="100")
+        html.Span(id="questionTotal",children="100")
     ]),
     html.Button(id="submitQuestion",children="submit")
 ])

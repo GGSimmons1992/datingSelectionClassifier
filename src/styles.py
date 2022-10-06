@@ -39,3 +39,15 @@ hidden = {
 }
 
 nostyle = {}
+
+selected = {
+    "text-align":"center",
+    "vertical-align":"middle",
+    "background-color":"deepskyblue"
+}
+
+unselected = {
+    "text-align":"center",
+    "vertical-align":"middle",
+    "background-color":"gainsboro"
+}

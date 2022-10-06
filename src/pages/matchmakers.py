@@ -1,14 +1,17 @@
 import numpy as np
 import pandas as pd
 from sklearn.metrics import confusion_matrix,accuracy_score,recall_score,precision_score
-from dash import Dash, html, dcc, Input, Output, dash_table
+from os.path import exists
+import dash
+from dash import html, dcc, Input, Output, dash_table
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import styles
 import ensembleDash
 
 significantFeaturesDictionary = dict()
-
+matrixDictionary = dict()
+metricsDictionary = dict()
 X = ensembleDash.X
 match = ensembleDash.match
 XTest = ensembleDash.XTest
@@ -42,6 +45,11 @@ for modelTuple in allEstimatorTuples:
     accuracyScores.append(accuracyScore)
     recallScores.append(recallScore)
     precisionScores.append(precisionScore)
+    matrixDictionary[modelTuple[0]] = px.imshow(confusionMatrix,
+    labels=dict(x="Actual", y="Predicted", color="Productivity"),
+    x=['Match Fail', 'Match Success'],
+    y=['Match Fail', 'Match Success'],
+    text_auto=True)
 
     if "log" in modelTuple[0]:
         coefficients = [coef for coef in (modelTuple[1]).named_steps['logisticregression'].coef_.reshape(-1,)]
@@ -57,7 +65,7 @@ for modelTuple in allEstimatorTuples:
         logImportancesSorted["description"] = pd.Series(featureDescriptions)
         logImportancesSorted["rank"] = pd.Series(list(range(1,11)))
         significantFeaturesDictionary[modelTuple[0]] = logImportancesSorted[["rank","feature","description"]]
-    elif "knn" not in modelTuple[0]:
+    elif (modelTuple[0] != "Ensemble") and ("knn" not in modelTuple[0]):
         importance = (modelTuple[1]).feature_importances_
         featureImportance = pd.DataFrame({
             "feature": XColumns,
@@ -70,12 +78,7 @@ for modelTuple in allEstimatorTuples:
         featureImportancesSorted["rank"] = pd.Series(list(range(1,11)))
         significantFeaturesDictionary[modelTuple[0]] = featureImportancesSorted[["rank","feature","description"]]
 
-metricsTable = pd.DataFrame({
-    "name":modelNames,
-    "accuracy":accuracyScores,
-    "recall":recallScores,
-    "precision":precisionScores
-},columns=["name","accuracy","recall","precision"])
+metricsTable = pd.DataFrame({"name":modelNames,"accuracy":accuracyScores,"recall":recallScores,"precision":precisionScores},columns=["name","accuracy","recall","precision"])
 
 modelDescriptionDictionary = {
     "Ensemble":"ensembleVote classifier using selected parameters above",
@@ -90,30 +93,53 @@ modelDescriptionDictionary = {
     "recallForest":"random forest trained for best recall" + str(recallForestParams)
 }
 
-Dash.register_page(__name__)
+dash.register_page(__name__,path="/")
 
 col12 = styles.col12
 col6 = styles.col6
-hidden = styles.hidden
+#hidden = styles.hidden
 nostyle = styles.nostyle
 
-layout = html.Div(style=col12,children=[
-    html.Div(id=estimatorTuple[0] + "Info",children=[
-        html.Div(children=[
-            html.Div(style=col6,children=html.H3(children=estimatorTuple[0])),
-            html.Div(style=col6,children=html.P(children=modelDescriptionDictionary[estimatorTuple[0]]))
-        ]),
-        html.Div(style=col6,children=[
-            html.Div(id=str(estimatorTuple[0]) + "Matrix"),
-            html.Div(id=str(estimatorTuple[0]) + "Metrics")
-        ]),
-        html.Div(style=(hidden if "knn" in estimatorTuple[0] else nostyle),children=[
-            html.H4("Top 10 deciding features:"),
-            dash_table.DataTable(significantFeaturesDictionary[estimatorTuple[0]])
-        ]),
-        html.Div(style=(nostyle if "knn" in estimatorTuple[0] else hidden),children=[
-            html.H4("Top 10 deciding features:"),
-            dash_table.DataTable(significantFeaturesDictionary[estimatorTuple[0]])
+modelInfoList = []
+for modelInfo in allEstimatorTuples:
+    if modelInfo[0] == "Ensemble" or "knn" in modelInfo[0]:
+        modInfoLayout = html.Div(id=modelInfo[0] + "Info",children=[
+            html.Div(children=[
+            html.Div(style=col6,children=html.H3(children=modelInfo[0])),
+            html.Div(style=col6,children=html.P(children=modelDescriptionDictionary[modelInfo[0]]))
+            ]),
+            html.Div(children=[
+                html.Div(style=col6,children=[
+                    dcc.Graph(id=str(modelInfo[0]) + "Matrix",figure=matrixDictionary[modelInfo[0]])
+                ]),
+                html.Div(style=col6,children=[
+                    dcc.Graph(id=str(modelInfo[0]) + "Metrics",
+                    figure=px.bar(metricsTable.loc[metricsTable["name"] == modelInfo[0],["accuracy","recall","precision"]],
+                    orientation='h',hover_data=["accuracy","recall","precision"]))
+                ])
+            ])
         ])
-    ]) for estimatorTuple in allEstimatorTuples
-])
+    else:
+        modInfoLayout = html.Div(id=modelInfo[0] + "Info",children=[
+            html.Div(children=[
+            html.Div(style=col6,children=html.H3(children=modelInfo[0])),
+            html.Div(style=col6,children=html.P(children=modelDescriptionDictionary[modelInfo[0]]))
+            ]),
+            html.Div(children=[
+                html.Div(style=col6,children=[
+                    dcc.Graph(id=str(modelInfo[0]) + "Matrix",figure=matrixDictionary[modelInfo[0]])
+                ]),
+                html.Div(style=col6,children=[
+                    dcc.Graph(id=str(modelInfo[0]) + "Metrics",
+                    figure=px.bar(metricsTable.loc[metricsTable["name"] == modelInfo[0],["accuracy","recall","precision"]],
+                    orientation='h',hover_data=["accuracy","recall","precision"]))
+                ])
+            ]),
+            html.Div(children=[
+                html.H4("Top 10 deciding features:"),
+                dash_table.DataTable(id=modelInfo[0]+"Table",data=significantFeaturesDictionary[modelInfo[0]])
+            ])
+        ])
+    modelInfoList.append(modInfoLayout)
+
+layout = html.Div(style=col12,children=modelInfoList)

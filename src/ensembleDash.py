@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier as rf
 from sklearn.tree import DecisionTreeClassifier as tree
 from sklearn.ensemble import VotingClassifier
 from geopy.distance import great_circle
-
+from sklearn.metrics import confusion_matrix,accuracy_score,recall_score,precision_score
 from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc
 import plotly.express as px
@@ -22,7 +22,6 @@ import styles
 #from os import remove
 #from sklearn.model_selection import train_test_split
 #import sklearn.model_selection as ms
-#import sklearn.metrics as sm
 #from sklearn.model_selection import cross_validate
 #from sklearn import metrics
 #import scipy.stats as stats
@@ -51,13 +50,13 @@ with open('../data/processedData/forestParams.json') as d:
 with open("../data/descriptionDictionary.json") as d:
     descriptionDictionary = json.load(d)  
 
-datingTrain = pd.read_csv('../data/processedData/datingTrain.csv')
-datingTest = pd.read_csv('../data/processedData/datingTest.csv')
+datingTrain = pd.read_csv('../data/plotlyDashData/datingTrain.csv')
+datingTest = pd.read_csv('../data/plotlyDashData/datingTest.csv')
 
 match = datingTrain["match"]
-X = datingTrain.drop("match",axis=1)
+X = datingTrain.drop("match",axis=1).select_dtypes(include=['uint8','int64','float64'])
 matchTest = datingTest["match"]
-XTest = datingTest.drop("match",axis=1) 
+XTest = datingTest.drop("match",axis=1).select_dtypes(include=['uint8','int64','float64'])
 
 
 sqrtn = int(np.sqrt(X.shape[0]))
@@ -113,12 +112,10 @@ fitContent = styles.fitContent
 
 sidebar = html.Div(
     [
-        html.H2("Profile Parameters"),
-        html.Hr(),
         dbc.Nav(
             [
-                html.Div(style=centerMiddle,children="Sandbox",id="sandboxtab",style=selected),
-                html.Div(style=centerMiddle,children="Matchmakers",id="matchesmakerstab")
+                html.Div(style=unselected,children="Sandbox",id="sandboxtab"),
+                html.Div(style=selected,children="Matchmakers",id="matchesmakerstab")
             ],
             vertical=True,
             pills=True,
@@ -132,11 +129,110 @@ app.layout = html.Div(children= [
     html.H1(children='Ensemble Dash!',style={"background-color":"dodgerblue"}),
     html.H2(id="pagetitle",children='Sandbox',style={"background-color":"dodgerblue"}),
     dcc.CheckList(
+        id="modelSelection",
         options=[estimatorTuple[0] for estimatorTuple in originalEstimtatorTuples],
         value=[estimatorTuple[0] for estimatorTuple in originalEstimtatorTuples]
     ),
     Dash.page_container
 ])
 
+#modelSection callback
+@Dash.callback(
+    Output('EnsembleMatrix', 'figure'),
+    Output('EnsembleMetrics', 'figure'),
+    Output('logModelInfo', 'style'),
+    Output('knn5Info', 'style'),
+    Output('knnsqrtnInfo', 'style'),
+    Output('gradientdeciInfo', 'style'),
+    Output('gradientdekaInfo', 'style'),
+    Output('recallTreeInfo', 'style'),
+    Output('preciseTreeInfo', 'style'),
+    Output('recallForestInfo', 'style'),
+    Output('preciseForestInfo', 'style'),
+    Input('modelSelection', 'value'))
+def updateEnsemble(models):
+    includedModels = []
+    styleValues = []
+
+    if len(models)==0:
+        models = [modelTuple[0] for modelTuple in originalEstimtatorTuples]
+
+    if ("logModel" in models):
+        premod = lm.LogisticRegression(max_iter=1e9)
+        mod = make_pipeline(StandardScaler(), logModel)
+        includedModels.append(("logModel",mod))
+        styleValues.append(nostyle)
+    else:
+        styleValues.append(hidden)
+    if ("knn5" in models):
+        mod = knn(n_neighbors=5)
+        includedModels.append(("knn5",mod))
+        styleValues.append(nostyle)
+    else:
+        styleValues.append(hidden)
+    if ("knnsqrtn" in models):
+        mod = knn(n_neighbors=sqrtn)
+        includedModels.append(("knnsqrtn",mod))
+        styleValues.append(nostyle)
+    else:
+        styleValues.append(hidden)
+    if ("gradientdeci" in models):
+        mod = grad(learning_rate=0.1)
+        includedModels.append(("gradientdeci",mod))
+        styleValues.append(nostyle)
+    else:
+        styleValues.append(hidden)
+    if ("gradientdeka" in models):
+        mod = grad(learning_rate=10)
+        includedModels.append(("gradientdeka",mod))
+        styleValues.append(nostyle)
+    else:
+        styleValues.append(hidden)
+    if ("recallTree" in models):
+        mod = make_pipeline(StandardScaler(), logModel)
+        includedModels.append(("recallTree",mod))
+        styleValues.append(nostyle)
+    else:
+        styleValues.append(hidden)
+    if ("preciseTree" in models):
+        mod = make_pipeline(StandardScaler(), logModel)
+        includedModels.append(("preciseTree",mod))
+        styleValues.append(nostyle)
+    else:
+        styleValues.append(hidden)
+    if ("recallForest" in models):
+        mod = make_pipeline(StandardScaler(), logModel)
+        includedModels.append(("recallForest",mod))
+        styleValues.append(nostyle)
+    else:
+        styleValues.append(hidden)
+    if ("preciseForest" in models):
+        mod = make_pipeline(StandardScaler(), logModel)
+        includedModels.append(("preciseForest",mod))
+        styleValues.append(nostyle)
+    else:
+        styleValues.append(hidden)
+    
+    newEnsemble = VotingClassifier(estimators = includedModels)
+    newEnsemble.fit(X,match)
+    ypredict = newEnsemble.predict(XTest)
+    confusionMatrix = confusion_matrix(matchTest,ypredict)
+    accuracyScore = accuracy_score(matchTest,ypredict)
+    recallScore = recall_score(matchTest,ypredict)
+    precisionScore = precision_score(matchTest,ypredict)
+
+    cm = px.imshow(confusionMatrix,
+    labels=dict(x="Actual", y="Predicted", color="Productivity"),
+                x=['Match Fail', 'Match Success'],
+                y=['Match Fail', 'Match Success'],
+    text_auto=True)
+    metrics=px.bar(x=[accuracyScore,recallScore,precisionScore],y=["accuracy","recall","precision"],
+                orientation='h',hover_data=["accuracy","recall","precision"])
+
+    return cm,metrics,styleValues[0],styleValues[1],styleValues[2],styleValues[3],styleValues[4],styleValues[5],styleValues[6],styleValues[7],styleValues[8]
+
+#sandbox callbacks
+
+#run app
 if __name__ == '__main__':
     app.run_server(debug=True)
