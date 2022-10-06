@@ -197,7 +197,8 @@ while selectedMatchIndex == datingTest.shape[0]:
 
 selectedMatchDF = datingTest.iloc[[selectedMatchIndex]]
 selectedMatch = datingTest.iloc[selectedMatchIndex]
-for col in selectedMatchDF.columns:
+selectedMatchFeatures = list(selectedMatchDF.columns)
+for col in selectedMatchFeatures:
     if col in candidateProfile.columns:
         if col in candidateDummyList:
             dummyCols = dummyDictionary[col]
@@ -231,6 +232,7 @@ sandboxCollection["selectedMatch"] = selectedMatch.to_list()
 sandboxCollection["candidateFeatures"] = candidateFeatures
 sandboxCollection["partnerFeatures"] = partnerFeatures
 sandboxCollection["questionDictionary"] = questionDictionary
+sandboxCollection["selectedMatchFeatures"]= selectedMatchFeatures
 with open("../data/plotlyDashData/sandboxCollection.json","w") as fp:
     json.dump(sandboxCollection,fp)
 

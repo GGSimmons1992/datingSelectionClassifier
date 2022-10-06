@@ -11,7 +11,8 @@ with open("../data/plotlyDashData/sandboxCollection.json") as d:
     featureSelectOptions = sandboxCollection["featureSelectOptions"]
     selectedValue = sandboxCollection["selectedValue"]
     descriptionDictionary = sandboxCollection["descriptionDictionary"]
-    selectedMatch = pd.Series(sandboxCollection["selectedMatch"])
+    selectedMatchFeatures = sandboxCollection["selectedMatchFeatures"]
+    selectedMatch = pd.Series(sandboxCollection["selectedMatch"],index=selectedMatchFeatures)
     candidateFeatures = sandboxCollection["candidateFeatures"]
     partnerFeatures = sandboxCollection["partnerFeatures"]
     questionDictionary  = sandboxCollection["questionDictionary"]
