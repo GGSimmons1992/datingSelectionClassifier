@@ -199,7 +199,7 @@ selectedMatchDF = datingTest.iloc[[selectedMatchIndex]]
 selectedMatch = datingTest.iloc[selectedMatchIndex]
 selectedMatchFeatures = list(selectedMatchDF.columns)
 for col in selectedMatchFeatures:
-    if col in candidateProfile.columns:
+    if col in candidateFeatures:
         if col in candidateDummyList:
             dummyCols = dummyDictionary[col]
             for dummyCol in dummyCols:
@@ -214,28 +214,24 @@ for col in selectedMatchFeatures:
             candidateProfile[col] = selectedMatch[col]
             partnerProfile[str(col)+"_o"] = selectedMatch[str(col)+"_o"]
 
-# store into json collections
+# store into json collection
 
-matchmakerCollection = dict()
-matchmakerCollection["modelDescriptionDictionary"] = modelDescriptionDictionary
-matchmakerCollection["matrixDictionary"] = matrixDictionary
-matchmakerCollection["metricsTable"] = metricsTable
-matchmakerCollection["significantFeaturesDictionary"] = significantFeaturesDictionary
-with open("../data/plotlyDashData/matchmakerCollection.json","w") as fp:
-    json.dump(matchmakerCollection,fp)
+collectionDictionary = dict()
 
-sandboxCollection = dict()
-sandboxCollection["featureSelectOptions"] = featureSelectOptions
-sandboxCollection["selectedValue"] = selectedValue
-sandboxCollection["descriptionDictionary"] = descriptionDictionary
-sandboxCollection["selectedMatch"] = selectedMatch.to_list()
-sandboxCollection["candidateFeatures"] = candidateFeatures
-sandboxCollection["partnerFeatures"] = partnerFeatures
-sandboxCollection["questionDictionary"] = questionDictionary
-sandboxCollection["selectedMatchFeatures"]= selectedMatchFeatures
-with open("../data/plotlyDashData/sandboxCollection.json","w") as fp:
-    json.dump(sandboxCollection,fp)
+collectionDictionary["modelDescriptionDictionary"] = modelDescriptionDictionary
+collectionDictionary["matrixDictionary"] = matrixDictionary
+collectionDictionary["metricsTable"] = metricsTable
+collectionDictionary["significantFeaturesDictionary"] = significantFeaturesDictionary
+collectionDictionary["featureSelectOptions"] = featureSelectOptions
+collectionDictionary["selectedValue"] = selectedValue
+collectionDictionary["descriptionDictionary"] = descriptionDictionary
+collectionDictionary["selectedMatch"] = selectedMatch.to_list()
+collectionDictionary["candidateFeatures"] = candidateFeatures
+collectionDictionary["partnerFeatures"] = partnerFeatures
+collectionDictionary["questionDictionary"] = questionDictionary
+collectionDictionary["selectedMatchFeatures"] = selectedMatchFeatures
+collectionDictionary["candidateProfile"] = candidateProfile
+collectionDictionary["partnerProfile"] = partnerProfile
+with open("../data/plotlyDashData/collectionDictionary.json","w") as fp:
+    json.dump(collectionDictionary,fp)
 
-
-candidateProfile.to_csv("../data/plotlyDashData/candidateProfile.csv",index=False)
-partnerProfile.to_csv("../data/plotlyDashData/partnerProfile.csv",index=False)

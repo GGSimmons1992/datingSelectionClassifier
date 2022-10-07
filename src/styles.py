@@ -98,7 +98,7 @@ unselected = {
 }
 
 displayHidden = {
-    "display":"hidden"
+    "display":"none"
 }
 
 displayBlock = {
