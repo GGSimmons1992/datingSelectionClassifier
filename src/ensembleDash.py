@@ -16,6 +16,7 @@ import styles
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.figure_factory as ff
 
 with open("../data/plotlyDashData/collectionDictionary.json") as d:
     collectionDictionary = json.load(d)
@@ -99,6 +100,58 @@ allEstimatorTuples = [("Ensemble",ensembleVote)] + originalEstimtatorTuples
 
 for estimatorTuple in allEstimatorTuples:
     (estimatorTuple[1]).fit(X,match)
+
+def generateIncludedModels(models):
+    includedModels = []
+    
+    if ("logModel" in models):
+        premod = lm.LogisticRegression(max_iter=1e9)
+        mod = make_pipeline(StandardScaler(), premod)
+        includedModels.append(("logModel",mod))
+    if ("knn5" in models):
+        mod = knn(n_neighbors=5)
+        includedModels.append(("knn5",mod))
+    if ("knnsqrtn" in models):
+        mod = knn(n_neighbors=sqrtn)
+        includedModels.append(("knnsqrtn",mod))
+    if ("gradientdeci" in models):
+        mod = grad(learning_rate=0.1)
+        includedModels.append(("gradientdeci",mod))
+    if ("gradientdeka" in models):
+        mod = grad(learning_rate=10)
+        includedModels.append(("gradientdeka",mod))
+    if ("recallTree" in models):
+        mod = tree(criterion = recallTreeParams["criterion"],
+        max_depth = recallTreeParams["max_depth"],
+        max_features = recallTreeParams["max_features"])
+        includedModels.append(("recallTree",mod))
+    if ("preciseTree" in models):
+        mod = tree(criterion = preciseTreeParams["criterion"],
+        max_depth = preciseTreeParams["max_depth"],
+        max_features = preciseTreeParams["max_features"])
+        includedModels.append(("preciseTree",mod))
+    if ("recallForest" in models):
+        mod = rf(n_estimators = recallForestParams["n_estimators"],
+        criterion = recallForestParams["criterion"],
+        max_depth = recallForestParams["max_depth"],
+        max_features = recallForestParams["max_features"])
+        includedModels.append(("recallForest",mod))
+    if ("preciseForest" in models):
+        mod = rf(n_estimators = preciseForestParams["n_estimators"],
+        criterion = preciseForestParams["criterion"],
+        max_depth = preciseForestParams["max_depth"],
+        max_features = preciseForestParams["max_features"])
+        includedModels.append(("preciseForest",mod))
+    
+    return includedModels
+
+def createResultsDFFromDummies(newEnsemble,featureParam,matchProfile):
+    resultsDF = pd.DataFrame()
+    return resultsDF
+
+def createResultsDFFromRange(allModels,featureParam,matchProfile):
+    resultsDF = pd.DataFrame()
+    return resultsDF
 
 # Dash code
 app = Dash(__name__,suppress_callback_exceptions=True)
@@ -191,6 +244,26 @@ featureSelect = dcc.Dropdown(
     value=[]
 )
 
+candidateEdit = html.Div(id="candidateEdit",style=displayHidden,children=[
+    html.H4("Select dropdown to edit a feature in candidate profile"),
+    dcc.Dropdown(
+    id="candidateSelect",
+    options=featureSelectOptions,
+    value=[]
+    ),
+    html.Div(style=displayHidden,id="candidateEditor")
+])
+
+partnerEdit = html.Div(id="partnerEdit",style=displayHidden,children=[
+    html.H4("Select dropdown to edit a feature in partner profile"),
+    dcc.Dropdown(
+    id="partnerSelect",
+    options=featureSelectOptions,
+    value=[]
+    ),
+    html.Div(style=displayHidden,id="partnerEditor")
+])
+
 featureNumber = html.Div(id='featureNumber',style=displayBlock,children=[
     html.Span(id="featureNumberLabel"),
     dcc.Input(id="featureNumberInput",type="number")
@@ -233,6 +306,7 @@ sandboxLayout = html.Div(style=col12,children=[
     html.Div(children=[
         html.Div(style=col3,children=[
             html.H3(style=displayBlock,children="candidate features"),
+            candidateEdit,
             html.Div(children=[
                 html.Div(id=str(col)+"Display",title=descriptionDictionary[col],children = [
                     html.Span(children=f"{col}: "),
@@ -242,11 +316,12 @@ sandboxLayout = html.Div(style=col12,children=[
             ])
         ]),
         html.Div(style=col6,children=[
-            html.Div(children=dcc.Graph(style=col12,id="predictProbaGraph")),
-            html.Div(children=dcc.Graph(style=col12,id="diversityGraph"))
+            html.Div(children=dcc.Graph(style=col12,id="predictProbaGraph",figure=px.line(dict()))),
+            html.Div(children=dcc.Graph(style=col12,id="diversityGraph",figure = ff.create_distplot({}, [])))
         ]),
         html.Div(style=col3,children=[
             html.H3(style=displayBlock,children="partner features"),
+            partnerEdit,
             html.Div(children=[
                 html.Div(id=str(col)+"Edit",title=descriptionDictionary[col],children = [
                     html.Span(children=f"{col}: "),
@@ -255,7 +330,10 @@ sandboxLayout = html.Div(style=col12,children=[
                 for col in partnerFeatures
             ])
         ])
-    ])
+    ]),
+    dcc.Store(id='candidate', storage_type='session'),
+    dcc.Store(id='partner', storage_type='session'),
+    dcc.Store(id='pairing', storage_type='session')
 ])
 
 app.layout = html.Div(children= [
@@ -290,51 +368,12 @@ def updatePage(pathname):
     dash.dependencies.Output('EnsembleInfo','style')],
     [dash.dependencies.Input('modelSelection', 'value')], prevent_initial_call=True)
 def updateEnsembleInfo(models):
-    includedModels = []
-    styleValue = displayBlock
     if len(models)==0:
         return px.imshow(np.zeros((2,2))),go.Figure(go.Bar(dict())),displayHidden
     if len(models)==1:
         return px.imshow(np.zeros((2,2))),go.Figure(go.Bar(dict())),displayHidden
 
-    if ("logModel" in models):
-        premod = lm.LogisticRegression(max_iter=1e9)
-        mod = make_pipeline(StandardScaler(), premod)
-        includedModels.append(("logModel",mod))
-    if ("knn5" in models):
-        mod = knn(n_neighbors=5)
-        includedModels.append(("knn5",mod))
-    if ("knnsqrtn" in models):
-        mod = knn(n_neighbors=sqrtn)
-        includedModels.append(("knnsqrtn",mod))
-    if ("gradientdeci" in models):
-        mod = grad(learning_rate=0.1)
-        includedModels.append(("gradientdeci",mod))
-    if ("gradientdeka" in models):
-        mod = grad(learning_rate=10)
-        includedModels.append(("gradientdeka",mod))
-    if ("recallTree" in models):
-        mod = tree(criterion = recallTreeParams["criterion"],
-        max_depth = recallTreeParams["max_depth"],
-        max_features = recallTreeParams["max_features"])
-        includedModels.append(("recallTree",mod))
-    if ("preciseTree" in models):
-        mod = tree(criterion = preciseTreeParams["criterion"],
-        max_depth = preciseTreeParams["max_depth"],
-        max_features = preciseTreeParams["max_features"])
-        includedModels.append(("preciseTree",mod))
-    if ("recallForest" in models):
-        mod = rf(n_estimators = recallForestParams["n_estimators"],
-        criterion = recallForestParams["criterion"],
-        max_depth = recallForestParams["max_depth"],
-        max_features = recallForestParams["max_features"])
-        includedModels.append(("recallForest",mod))
-    if ("preciseForest" in models):
-        mod = rf(n_estimators = preciseForestParams["n_estimators"],
-        criterion = preciseForestParams["criterion"],
-        max_depth = preciseForestParams["max_depth"],
-        max_features = preciseForestParams["max_features"])
-        includedModels.append(("preciseForest",mod))
+    includedModels = generateIncludedModels(models)
     
     newEnsemble = VotingClassifier(estimators = includedModels)
     newEnsemble.fit(X,match)
@@ -439,6 +478,41 @@ def updatepreciseForestInfo(models):
 
 
 #sandbox callbacks
+
+@app.callback(
+    [dash.dependencies.Output('predictProbaGraph','figure')],
+    [dash.dependencies.Input()]
+)
+def fitProba(models,featureParam,matchProfile):
+    includedModels = generateIncludedModels
+    newEnsemble = VotingClassifier(estimators = includedModels)
+    allModels = [("Ensemble",newEnsemble)] + includedModels
+
+    if len(list(set(datingTest[featureParam]))) < 30:
+        resultsDF = createResultsDFFromDummies(newEnsemble,featureParam,matchProfile)
+        fig = go.Figure(go.Bar(resultsDF,
+        x=featureParam, 
+        y="predictedSuccess",
+        orientation='h',
+        hovertext=["accuracy","recall","precision"]))
+    else:
+        resultsDF = createResultsDFFromRange(allModels,featureParam,matchProfile)
+        fig = px.line(resultsDF,x=featureParam,y='predictedSuccess',color = 'modelName',
+        labels= {featureParam:descriptionDictionary[featureParam],"modelName":"Model Name"},
+        title=f"Predicted Success vs {descriptionDictionary[featureParam]}")
+        
+    return fig
+
+@app.callback(
+    [dash.dependencies.Output('diversityGraph','figure')],
+    [dash.dependencies.Input()]
+)
+def fitHist(featureParam):
+    pass
+
+
+
+
 
 #run app
 if __name__ == '__main__':
