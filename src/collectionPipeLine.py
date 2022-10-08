@@ -14,7 +14,7 @@ import plotly.express as px
 
 #General code (from ensembleDash.py)
 # Train the models
-with open('../data/processedData/columnDataDictionary.json') as d:
+with open('../data/plotlyDashData/columnDataDictionary.json') as d:
     columnDataDictionary = json.load(d)
     columnList = columnDataDictionary['columnList']
     nonBinaryCategoricalList = columnDataDictionary['nonBinaryCategoricalList']
@@ -22,13 +22,13 @@ with open('../data/processedData/columnDataDictionary.json') as d:
     pointDistributionList = columnDataDictionary['pointDistributionList']
     sharedList = columnDataDictionary['sharedList']
     partnerList = columnDataDictionary['partnerList']
-with open("../data/processedData/dummyDictionary.json") as d:
+with open("../data/plotlyDashData/dummyDictionary.json") as d:
     dummyDictionary = json.load(d)
-with open('../data/processedData/treeParams.json') as d:
+with open('../data/plotlyDashData/treeParams.json') as d:
     treeParams = json.load(d)
     preciseTreeParams = treeParams["preciseTreeParams"]
     recallTreeParams = treeParams["recallTreeParams"]
-with open('../data/processedData/forestParams.json') as d:
+with open('../data/plotlyDashData/forestParams.json') as d:
     forestParams = json.load(d)
     preciseForestParams = forestParams["preciseForestParams"]
     recallForestParams = forestParams["recallForestParams"]
