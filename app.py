@@ -24,16 +24,12 @@ with open("../data/plotlyDashData/collectionDictionary.json") as d:
     matrixDictionary = collectionDictionary["matrixDictionary"]
     metricsTable = collectionDictionary["metricsTable"]
     significantFeaturesDictionary = collectionDictionary["significantFeaturesDictionary"]
-    featureSelectOptions = collectionDictionary["featureSelectOptions"]
-    selectedValue = collectionDictionary["selectedValue"]
-    descriptionDictionary = collectionDictionary["descriptionDictionary"]
-    selectedMatchFeatures = collectionDictionary["selectedMatchFeatures"]
-    selectedMatch = pd.Series(collectionDictionary["selectedMatch"],index=selectedMatchFeatures)
-    candidateFeatures = collectionDictionary["candidateFeatures"]
-    partnerFeatures = collectionDictionary["partnerFeatures"]
-    questionDictionary  = collectionDictionary["questionDictionary"]
-    candidateProfile = collectionDictionary["candidateProfile"]
-    partnerProfile = collectionDictionary["partnerProfile"]
+    featureSelectOptions = collectionDictionary["featureSelectOptionsv"]
+
+with open("../data/plotlyDashData/dummyValueDictionary.json") as d:
+    dummyValueDictionary = json.load(d)
+with open("../data/plotlyDashData/dummyValueDictionary.json") as d:
+    dummyValueDictionary = json.load(d)
 
 matrixDictionaryKeys = matrixDictionary.keys()
 for k in matrixDictionaryKeys:
@@ -237,104 +233,6 @@ for modelInfo in allEstimatorTuples:
     modelInfoList.append(dcc.Loading(children=modInfoLayout))
 
 matchmakersLayout = html.Div(style=col12,children=modelInfoList)
-
-featureSelect = dcc.Dropdown(
-    id="featureSelect",
-    options=featureSelectOptions,
-    value=[]
-)
-
-candidateEdit = html.Div(id="candidateEdit",style=displayHidden,children=[
-    html.H4("Select dropdown to edit a feature in candidate profile"),
-    dcc.Dropdown(
-    id="candidateSelect",
-    options=featureSelectOptions,
-    value=[]
-    ),
-    html.Div(style=displayHidden,id="candidateEditor")
-])
-
-partnerEdit = html.Div(id="partnerEdit",style=displayHidden,children=[
-    html.H4("Select dropdown to edit a feature in partner profile"),
-    dcc.Dropdown(
-    id="partnerSelect",
-    options=featureSelectOptions,
-    value=[]
-    ),
-    html.Div(style=displayHidden,id="partnerEditor")
-])
-
-featureNumber = html.Div(id='featureNumber',style=displayBlock,children=[
-    html.Span(id="featureNumberLabel"),
-    dcc.Input(id="featureNumberInput",type="number")
-])
-
-featureDropdown = html.Div(id='featureNumber',style=displayBlock,children=[
-    html.Span(id="featureNumberLabel"),
-    dcc.Dropdown(id='featureDropdownInput')
-])
-
-sandboxLayout = html.Div(style=col12,children=[
-    html.Div(children=[
-        html.Div(style=col4,children=[
-            html.H3(style=displayBlock,children="What do you want to examine"),
-            featureSelect
-        ]),
-        html.Div(style=col8,children=[
-            html.H3(style=col12,children="Calculated Values: Edit profile traits to change these"),
-            html.Div(style=col6,children=[
-                html.Div(style=col12,title=descriptionDictionary["partnerDistance"],children=[
-                    html.Span(children="Partner Distance: "),
-                    html.Span(id="partnerDistance",children=str(round(selectedMatch["partnerDistance"]))),
-                    html.Span(children="miles")
-                ]),
-                html.Div(style=col12,title=descriptionDictionary["samerace"],children=[
-                    html.Span(children="Same race?: "),
-                    html.Span(id="samerace",children = "yes" if (selectedMatch["samerace"]==1) else "no")
-                ])
-            ]),
-            html.Div(style=col6,children=[
-                html.Div(style=col6,id="sharedInterestsValue",children=[
-                    html.Span(children="Shared Interest Correlation:"),
-                    html.Span(id="int_corr",children=selectedMatch["int_corr"])
-                ]),
-                html.Div(style=col6,children=dcc.Graph(style=col12,id="sharedInterestsGraph"))
-            ])
-        ])
-        
-    ]),
-    html.Div(children=[
-        html.Div(style=col3,children=[
-            html.H3(style=displayBlock,children="candidate features"),
-            candidateEdit,
-            html.Div(children=[
-                html.Div(id=str(col)+"Display",title=descriptionDictionary[col],children = [
-                    html.Span(children=f"{col}: "),
-                    html.Span(id=str(col)+"Value",children=candidateProfile[col])
-                ]) 
-                for col in candidateFeatures
-            ])
-        ]),
-        html.Div(style=col6,children=[
-            html.Div(children=dcc.Graph(style=col12,id="predictProbaGraph",figure=px.line(dict()))),
-            html.Div(children=dcc.Graph(style=col12,id="diversityGraph",figure = ff.create_distplot({}, [])))
-        ]),
-        html.Div(style=col3,children=[
-            html.H3(style=displayBlock,children="partner features"),
-            partnerEdit,
-            html.Div(children=[
-                html.Div(id=str(col)+"Edit",title=descriptionDictionary[col],children = [
-                    html.Span(children=f"{col}: "),
-                    html.Span(id=str(col)+"Value",children=partnerProfile[col])
-                ]) 
-                for col in partnerFeatures
-            ])
-        ])
-    ]),
-    dcc.Store(id='candidate', storage_type='session'),
-    dcc.Store(id='partner', storage_type='session'),
-    dcc.Store(id='pairing', storage_type='session')
-])
 
 app.layout = html.Div(children= [
     dcc.Location(id='url', refresh=False),

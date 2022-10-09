@@ -10,7 +10,6 @@ from sklearn.ensemble import RandomForestClassifier as rf
 from sklearn.tree import DecisionTreeClassifier as tree
 from sklearn.ensemble import VotingClassifier
 from sklearn.metrics import confusion_matrix,accuracy_score,recall_score,precision_score
-import plotly.express as px
 
 #General code (from ensembleDash.py)
 # Train the models
@@ -163,56 +162,6 @@ featureSelectValues = [col for col in columnList if col not in dropList]
 featureSelectOptions = [
     {"label":f'{col}) {descriptionDictionary[col]}',"value":col} for col in featureSelectValues
 ]
-candidateDummyList = [str(k) for k in dummyDictionary.keys()]
-partnerDummyList = [str(k)+"_o" for k in dummyDictionary.keys()]
-
-candidateFeatures = []
-partnerFeatures = []
-for col in featureSelectValues:
-    if col in partnerList:
-        candidateFeatures.append(str(col))
-        partnerFeatures.append(str(col)+"_o")
-
-candidateProfile = pd.DataFrame(columns=candidateFeatures)
-partnerProfile = pd.DataFrame(columns=partnerFeatures)
-
-questionDictionary = dict()
-questionDictionary["1_1"]="What do you what do you look for in a partner? (budget out of 100 points)"
-questionDictionary["4_1"]="What do you what do you think others of your gender look for in a partner? (budget out of 100 points)"
-questionDictionary["2_1"]="What do you what do you think others of the opposite gender look for in a partner? (budget out of 100 points)"
-
-dummyValueDictionary = dict()
-with open("../data/dummyValueDictionary.json") as d:
-    dummyValueDictionary = json.load(d)
-
-selectedValueIndex = int(np.random.uniform(0,len(featureSelectOptions)))
-while selectedValueIndex == len(featureSelectOptions):
-    selectedValueIndex = int(np.random.uniform(0,len(featureSelectOptions)))
-
-selectedValue = featureSelectOptions[selectedValueIndex]
-
-selectedMatchIndex = int(np.random.uniform(0,datingTest.shape[0]))
-while selectedMatchIndex == datingTest.shape[0]:
-    selectedMatchIndex = int(np.random.uniform(0,datingTest.shape[0]))
-
-selectedMatchDF = datingTest.iloc[[selectedMatchIndex]]
-selectedMatch = datingTest.iloc[selectedMatchIndex]
-selectedMatchFeatures = list(selectedMatchDF.columns)
-for col in selectedMatchFeatures:
-    if col in candidateFeatures:
-        if col in candidateDummyList:
-            dummyCols = dummyDictionary[col]
-            for dummyCol in dummyCols:
-                if selectedMatch[dummyCol] == 1:
-                    candidateProfile[col] = dummyValueDictionary[dummyCol]
-                if selectedMatch[str(dummyCol)+"_o"] == 1:
-                    partnerProfile[str(dummyCol)+"_o"] = dummyValueDictionary[str(dummyCol)+"_o"]
-        elif col=="gender":
-            candidateProfile[col] = "female" if selectedMatch[col] == 0 else "male"
-            partnerProfile[col+"_o"] = "female" if selectedMatch[col+"_o"] == 0 else "male"
-        else:
-            candidateProfile[col] = selectedMatch[col]
-            partnerProfile[str(col)+"_o"] = selectedMatch[str(col)+"_o"]
 
 # store into json collection
 
@@ -223,15 +172,7 @@ collectionDictionary["matrixDictionary"] = matrixDictionary
 collectionDictionary["metricsTable"] = metricsTable
 collectionDictionary["significantFeaturesDictionary"] = significantFeaturesDictionary
 collectionDictionary["featureSelectOptions"] = featureSelectOptions
-collectionDictionary["selectedValue"] = selectedValue
-collectionDictionary["descriptionDictionary"] = descriptionDictionary
-collectionDictionary["selectedMatch"] = selectedMatch.to_list()
-collectionDictionary["candidateFeatures"] = candidateFeatures
-collectionDictionary["partnerFeatures"] = partnerFeatures
-collectionDictionary["questionDictionary"] = questionDictionary
-collectionDictionary["selectedMatchFeatures"] = selectedMatchFeatures
-collectionDictionary["candidateProfile"] = candidateProfile
-collectionDictionary["partnerProfile"] = partnerProfile
+
 with open("../data/plotlyDashData/collectionDictionary.json","w") as fp:
     json.dump(collectionDictionary,fp)
 

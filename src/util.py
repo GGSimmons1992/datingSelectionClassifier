@@ -107,6 +107,9 @@ def plotCorrelation(x,y,title):
     plt.title(f'{title} m={np.round(m,2)}, b={np.round(b,2)},accuracy={accScore}')
     
 def joinToPartner(candidateDF,partnerFullDF):
+    # lines with * comment were added to resolve "PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance"
+    # lines with ** comment were editted to accommodate comment above
+    # analyze commit closest to 18:20 8 October 2022 for more details
     with open('../data/processedData/columnDataDictionary.json') as d:
         columnDataDictionary = json.load(d)
     partnerList = columnDataDictionary['partnerList']
@@ -116,14 +119,23 @@ def joinToPartner(candidateDF,partnerFullDF):
     partner_o['iid_o'] = partner_o['iid']
     partner_o['pid_o'] = partner_o['pid']
     partner_o = partner_o.drop(['iid','pid'], axis=1)
+    partner_oCols = partner_o.columns # *
+    partner_oDictionary = dict() # *
+    for col in partner_oCols: # *
+        partner_oDictionary[col] = list(partner_o[col]) # *
+    partner_o = partner_oDictionary # *
+
     for col in list(partnerFullDF.columns):
         if col in partnerList:
-            partner_o[str(col)+'_o'] = partnerFullDF[col]
+            partner_o[str(col)+'_o'] = list(partnerFullDF[col]) # **
             if col in nonBinaryCategoricalList:
-                partner_o[str(col)+'_o'].apply(str)
+                categoricalValues = partner_o[str(col)+'_o'] #*
+                partner_o[str(col)+'_o'] = [str(val) for val in categoricalValues] #**
                 if ((str(col)+'_o') not in nonBinaryCategoricalList and '_o_o' not in (str(col)+'_o')):
                     nonBinaryCategoricalList.append(str(col)+'_o')
     
+    partner_o = pd.DataFrame(partner_o,columns=list(partner_o.keys())) # *
+
     columnDataDictionary['nonBinaryCategoricalList'] = nonBinaryCategoricalList
 
     with open('../data/processedData/columnDataDictionary.json', 'w') as fp:
