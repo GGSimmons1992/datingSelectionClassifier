@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import json
+from scipy.stats import spearmanr
 import sklearn.linear_model as lm
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -12,23 +13,24 @@ from sklearn.ensemble import VotingClassifier
 from sklearn.metrics import confusion_matrix,accuracy_score,recall_score,precision_score
 import dash
 from dash import Dash, html, dcc, Input, Output
-import styles
+import src.styles as styles
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
 
-with open("../data/plotlyDashData/collectionDictionary.json") as d:
+with open("data/plotlyDashData/collectionDictionary.json") as d:
     collectionDictionary = json.load(d)
     modelDescriptionDictionary = collectionDictionary["modelDescriptionDictionary"]
     matrixDictionary = collectionDictionary["matrixDictionary"]
     metricsTable = collectionDictionary["metricsTable"]
     significantFeaturesDictionary = collectionDictionary["significantFeaturesDictionary"]
-    featureSelectOptions = collectionDictionary["featureSelectOptionsv"]
+    featureSelectOptions = collectionDictionary["featureSelectOptions"]
 
-with open("../data/plotlyDashData/dummyValueDictionary.json") as d:
-    dummyValueDictionary = json.load(d)
-with open("../data/plotlyDashData/dummyValueDictionary.json") as d:
+with open("data/plotlyDashData/dummyDictionary.json") as d:
+    dummyDictionary = json.load(d)
+
+with open("data/dummyValueDictionary.json") as d:
     dummyValueDictionary = json.load(d)
 
 matrixDictionaryKeys = matrixDictionary.keys()
@@ -41,19 +43,19 @@ for k in matrixDictionaryKeys:
     text_auto=True)
 
 
-datingTrain = pd.read_csv('../data/plotlyDashData/datingTrain.csv')
-datingTest = pd.read_csv('../data/plotlyDashData/datingTest.csv')
+datingTrain = pd.read_csv('data/plotlyDashData/datingTrain.csv')
+datingTest = pd.read_csv('data/plotlyDashData/datingTest.csv')
 
 match = datingTrain["match"]
 X = datingTrain.drop("match",axis=1).select_dtypes(include=['uint8','int64','float64'])
 matchTest = datingTest["match"]
 XTest = datingTest.drop("match",axis=1).select_dtypes(include=['uint8','int64','float64'])
 
-with open('../data/processedData/treeParams.json') as d:
+with open('data/processedData/treeParams.json') as d:
     treeParams = json.load(d)
     preciseTreeParams = treeParams["preciseTreeParams"]
     recallTreeParams = treeParams["recallTreeParams"]
-with open('../data/processedData/forestParams.json') as d:
+with open('data/processedData/forestParams.json') as d:
     forestParams = json.load(d)
     preciseForestParams = forestParams["preciseForestParams"]
     recallForestParams = forestParams["recallForestParams"]
@@ -141,11 +143,62 @@ def generateIncludedModels(models):
     
     return includedModels
 
-def createResultsDFFromDummies(newEnsemble,featureParam,matchProfile):
+def createDFFromDictionary(dictionary):
+    return pd.DataFrame(dictionary,columns=list(dictionary.keys()))
+
+def createStatisticsFromDummies(newEnsemble,featureParam,fullX,fully):
+    newEnsemble.train(fullX,fully)
+    dummyCols = dummyDictionary[featureParam]
+    yPredictFull = newEnsemble.predict_proba(fullX)[1]
+    correlationDictionary = dict()
+    correlationDictionary["label"] = []
+    correlationDictionary["spearman r value"] = []
+    correlationDictionary["p"] = []
+    correlationDictionary["color"] = []
+
+    for dummyCol in dummyCols:
+        dummyLabel = dummyValueDictionary[dummyCol]
+        corr,p = spearmanr(list(fullX[dummyCol]),list(yPredictFull))
+        significanceColor = "green" if p < 0.05 else "red"
+        correlationDictionary["label"].append(dummyLabel)
+        correlationDictionary["spearman r value"].append(corr)
+        correlationDictionary["p"].append(p)
+        correlationDictionary["color"].append(significanceColor)
+
+    resultsDF = createDFFromDictionary(correlationDictionary)
+
+    fig = go.bar(resultsDF)
+
+    return fig
+
+def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,fully):
+    newEnsemble.train(fullX,fully)
+    dummyCols = dummyDictionary[featureParam]
+    yPredictFull = newEnsemble.predict_proba(fullX)[1]
+    correlationDictionary = dict()
+    correlationDictionary["label"] = []
+    correlationDictionary["spearman r value"] = []
+    correlationDictionary["p"] = []
+    correlationDictionary["color"] = []
+
+    for dummyCol in dummyCols:
+        dummyLabel = dummyValueDictionary[dummyCol]
+        corr,p = spearmanr(list(fullX[dummyCol]),list(yPredictFull))
+        significanceColor = "green" if p < 0.05 else "red"
+        correlationDictionary["label"].append(dummyLabel)
+        correlationDictionary["spearman r value"].append(corr)
+        correlationDictionary["p"].append(p)
+        correlationDictionary["color"].append(significanceColor)
+
+    resultsDF = createDFFromDictionary(correlationDictionary)
+
+    fig = go.bar(resultsDF)
+
+def createStatisticsFromRange(allModels,featureParam,matchProfile):
     resultsDF = pd.DataFrame()
     return resultsDF
 
-def createResultsDFFromRange(allModels,featureParam,matchProfile):
+def createCorrelationsFromRange(allModels,featureParam,matchProfile):
     resultsDF = pd.DataFrame()
     return resultsDF
 
@@ -175,7 +228,7 @@ sidebar = html.Div(style=sidebarstyle,children=[
                 ],
                 href=page["path"],
                 active="exact"
-            ) for page in [{"name":"sandbox","path":"/sandbox"},{"name":"matchmakers","path":"/matchmakers"}]
+            ) for page in [{"name":"Feature Analysis","path":"/featureanalysis"},{"name":"matchmakers","path":"/matchmakers"}]
         ],
         vertical=True,
         pills=True
@@ -234,6 +287,18 @@ for modelInfo in allEstimatorTuples:
 
 matchmakersLayout = html.Div(style=col12,children=modelInfoList)
 
+featureAnalysisTemplates = [
+    html.Div(id=genderType+"Info",children=[
+        html.H3(children = f"If candidate was {genderType}" if genderType != "overall" else "For both genders"),
+        html.div(children=[
+            html.div(style=col6,children=html.div(style=col12,children=dcc.Graph(id=genderType+"Diversity"))),
+            html.div(style=col6,children=html.div(style=col12,children=dcc.Graph(id=genderType+"Statistics"))),
+        ]),
+        html.div(chilren=dcc.Graph(id=genderType+"Correlations"))
+    ]) for genderType in ["male","female","overall"]]
+
+featureAnalysisLayout = html.Div(children=featureAnalysisTemplates)
+
 app.layout = html.Div(children= [
     dcc.Location(id='url', refresh=False),
     sidebar,
@@ -255,8 +320,8 @@ app.layout = html.Div(children= [
     Input('url', 'pathname'))
 def updatePage(pathname):
     print(pathname)
-    if "sandbox" in pathname.lower() or pathname.lower() == "/":
-        return "Sandbox",sandboxLayout
+    if "featureanalysis" in pathname.lower() or pathname.lower() == "/":
+        return "Feature Analysis",featureAnalysisLayout
     return "Matchmakers",matchmakersLayout
 
 #modelSection callback
@@ -377,36 +442,36 @@ def updatepreciseForestInfo(models):
 
 #sandbox callbacks
 
-@app.callback(
-    [dash.dependencies.Output('predictProbaGraph','figure')],
-    [dash.dependencies.Input()]
-)
-def fitProba(models,featureParam,matchProfile):
-    includedModels = generateIncludedModels
-    newEnsemble = VotingClassifier(estimators = includedModels)
-    allModels = [("Ensemble",newEnsemble)] + includedModels
+# @app.callback(
+#     [dash.dependencies.Output('predictProbaGraph','figure')],
+#     [dash.dependencies.Input()]
+# )
+# def fitProba(models,featureParam,matchProfile):
+#     includedModels = generateIncludedModels
+#     newEnsemble = VotingClassifier(estimators = includedModels)
+#     allModels = [("Ensemble",newEnsemble)] + includedModels
 
-    if len(list(set(datingTest[featureParam]))) < 30:
-        resultsDF = createResultsDFFromDummies(newEnsemble,featureParam,matchProfile)
-        fig = go.Figure(go.Bar(resultsDF,
-        x=featureParam, 
-        y="predictedSuccess",
-        orientation='h',
-        hovertext=["accuracy","recall","precision"]))
-    else:
-        resultsDF = createResultsDFFromRange(allModels,featureParam,matchProfile)
-        fig = px.line(resultsDF,x=featureParam,y='predictedSuccess',color = 'modelName',
-        labels= {featureParam:descriptionDictionary[featureParam],"modelName":"Model Name"},
-        title=f"Predicted Success vs {descriptionDictionary[featureParam]}")
+#     if len(list(set(datingTest[featureParam]))) < 30:
+#         resultsDF = createResultsDFFromDummies(newEnsemble,featureParam,matchProfile)
+#         fig = go.Figure(go.Bar(resultsDF,
+#         x=featureParam, 
+#         y="predictedSuccess",
+#         orientation='h',
+#         hovertext=["accuracy","recall","precision"]))
+#     else:
+#         resultsDF = createResultsDFFromRange(allModels,featureParam,matchProfile)
+#         fig = px.line(resultsDF,x=featureParam,y='predictedSuccess',color = 'modelName',
+#         labels= {featureParam:descriptionDictionary[featureParam],"modelName":"Model Name"},
+#         title=f"Predicted Success vs {descriptionDictionary[featureParam]}")
         
-    return fig
+#     return fig
 
-@app.callback(
-    [dash.dependencies.Output('diversityGraph','figure')],
-    [dash.dependencies.Input()]
-)
-def fitHist(featureParam):
-    pass
+# @app.callback(
+#     [dash.dependencies.Output('diversityGraph','figure')],
+#     [dash.dependencies.Input()]
+# )
+# def fitHist(featureParam):
+#     pass
 
 
 
