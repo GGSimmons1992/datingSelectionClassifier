@@ -146,53 +146,73 @@ def generateIncludedModels(models):
 def createDFFromDictionary(dictionary):
     return pd.DataFrame(dictionary,columns=list(dictionary.keys()))
 
-def createStatisticsFromDummies(newEnsemble,featureParam,fullX,fully):
-    newEnsemble.train(fullX,fully)
+def createDistributionFromDummies(featureParam,fullX,figTitle):
     dummyCols = dummyDictionary[featureParam]
-    yPredictFull = newEnsemble.predict_proba(fullX)[1]
-    correlationDictionary = dict()
-    correlationDictionary["label"] = []
-    correlationDictionary["spearman r value"] = []
-    correlationDictionary["p"] = []
-    correlationDictionary["color"] = []
+    labels = [dummyValueDictionary[dummyCol] for dummyCol in dummyCols]
+    
+    counts = [sum(fullX[col].reshape(-1,)) for col in dummyCols]
 
-    for dummyCol in dummyCols:
-        dummyLabel = dummyValueDictionary[dummyCol]
-        corr,p = spearmanr(list(fullX[dummyCol]),list(yPredictFull))
-        significanceColor = "green" if p < 0.05 else "red"
-        correlationDictionary["label"].append(dummyLabel)
-        correlationDictionary["spearman r value"].append(corr)
-        correlationDictionary["p"].append(p)
-        correlationDictionary["color"].append(significanceColor)
+    fig = go.bar(x=counts,y=labels,title=figTitle)
 
-    resultsDF = createDFFromDictionary(correlationDictionary)
-
-    fig = go.bar(resultsDF)
+    fig.update_layout(xaxis_title="counts",yaxis_title=f"{featureParam} Values")
 
     return fig
 
-def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,fully):
+def createStatisticsFromDummies(newEnsemble,featureParam,fullX,fully,figTitle):
+    newEnsemble.train(fullX,fully)
+    fullDF = fullX
+    fullDF["match"] = fully
+    
+    dummyCols = dummyDictionary[featureParam]
+    statisticsDictionary = dict()
+    statisticsDictionary["label"] = []
+    statisticsDictionary["mean"] = []
+    statisticsDictionary["standard error"] = []
+    for dummyCol in dummyCols:
+        selectedRows = fullDF[fullDF[dummyCol]==1]
+        if selectedRows.shape[0] == 0:
+            pass
+        else:
+            selectedX = selectedRows.drop("match",axis=1)
+            predicty = (newEnsemble.predict_proba(selectedX)[1]).reshape(-1,)
+            yMean = np.mean(predicty)
+            ySE = np.std(predicty)/np.sqrt(len(predicty))
+            statisticsDictionary["label"].append(dummyValueDictionary[dummyCol])
+            statisticsDictionary["mean"].append(yMean)
+            statisticsDictionary["standard error"].append(ySE)
+    
+    resultsDF = createDFFromDictionary(statisticsDictionary)
+
+    fig = go.bar(resultsDF, x="mean",y="label",error_x="standard error",
+    orientation="h",labels={"mean":"mean predicted probability","label":featureParam+" value"},
+    title=figTitle)
+
+    return fig
+
+def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,fully,figTitle):
     newEnsemble.train(fullX,fully)
     dummyCols = dummyDictionary[featureParam]
     yPredictFull = newEnsemble.predict_proba(fullX)[1]
     correlationDictionary = dict()
     correlationDictionary["label"] = []
     correlationDictionary["spearman r value"] = []
-    correlationDictionary["p"] = []
     correlationDictionary["color"] = []
 
     for dummyCol in dummyCols:
         dummyLabel = dummyValueDictionary[dummyCol]
         corr,p = spearmanr(list(fullX[dummyCol]),list(yPredictFull))
         significanceColor = "green" if p < 0.05 else "red"
-        correlationDictionary["label"].append(dummyLabel)
+        correlationDictionary["label"].append(dummyLabel + f" p={round(p,2)}")
         correlationDictionary["spearman r value"].append(corr)
-        correlationDictionary["p"].append(p)
         correlationDictionary["color"].append(significanceColor)
 
     resultsDF = createDFFromDictionary(correlationDictionary)
 
-    fig = go.bar(resultsDF)
+    fig = go.bar(resultsDF, x="spearman r value",y="label",
+    orientation="h",labels={"spearman r value":"Spearman R Correlation Value","label":featureParam+" value"},
+    title=figTitle)
+
+    return fig
 
 def createStatisticsFromRange(allModels,featureParam,matchProfile):
     resultsDF = pd.DataFrame()
@@ -203,7 +223,7 @@ def createCorrelationsFromRange(allModels,featureParam,matchProfile):
     return resultsDF
 
 # Dash code
-app = Dash(__name__,suppress_callback_exceptions=True)
+app = Dash(__name__,suppress_callback_exceptions=True,external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 col12 = styles.col12
 col8 = styles.col8
@@ -288,13 +308,15 @@ for modelInfo in allEstimatorTuples:
 matchmakersLayout = html.Div(style=col12,children=modelInfoList)
 
 featureAnalysisTemplates = [
-    html.Div(id=genderType+"Info",children=[
-        html.H3(children = f"If candidate was {genderType}" if genderType != "overall" else "For both genders"),
-        html.div(children=[
-            html.div(style=col6,children=html.div(style=col12,children=dcc.Graph(id=genderType+"Diversity"))),
-            html.div(style=col6,children=html.div(style=col12,children=dcc.Graph(id=genderType+"Statistics"))),
-        ]),
-        html.div(chilren=dcc.Graph(id=genderType+"Correlations"))
+    dcc.Loading(children=[
+        html.Div(style=displayHidden,id=genderType+"Info",children=[
+            html.H3(children = f"If candidate was {genderType}" if genderType != "overall" else "For both genders"),
+            html.div(children=[
+                html.div(style=col6,children=html.div(style=col12,children=dcc.Graph(id=genderType+"Diversity"))),
+                html.div(style=col6,children=html.div(style=col12,children=dcc.Graph(id=genderType+"Statistics"))),
+            ]),
+            html.div(chilren=dcc.Graph(id=genderType+"Correlations"))
+        ])
     ]) for genderType in ["male","female","overall"]]
 
 featureAnalysisLayout = html.Div(children=featureAnalysisTemplates)
