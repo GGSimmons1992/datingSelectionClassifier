@@ -158,7 +158,8 @@ modelDescriptionDictionary = {
 #sandbox code (from sandbox.py)
 halfwayQuestions = [col for col in columnList if (("1_s" in col)|("3_s" in col))]
 dropList = ["iid","pid","round","order","undergra","from","zipcode","dec","match"] + halfwayQuestions
-featureSelectValues = [col for col in columnList if col not in dropList]
+featureSelectValues = [col for col in columnList if col not in dropList] + ["partnerDistance"]
+featureSelectValues += [str(col)+"_o" for col in featureSelectValues if col not in ["samerace","int_corr","partnerDistance"]]
 featureSelectOptions = [
     {"label":f'{col}) {descriptionDictionary[col]}',"value":col} for col in featureSelectValues
 ]

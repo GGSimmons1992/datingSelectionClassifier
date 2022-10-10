@@ -30,8 +30,16 @@ with open("data/plotlyDashData/collectionDictionary.json") as d:
 with open("data/plotlyDashData/dummyDictionary.json") as d:
     dummyDictionary = json.load(d)
 
+originalDummyDictionaryKeys = list(dummyDictionary.keys())
+for originalKey in originalDummyDictionaryKeys:
+    dummyDictionary[originalKey+"_o"] = [str(col)+"_o" for col in dummyDictionary[originalKey]]
+
 with open("data/dummyValueDictionary.json") as d:
     dummyValueDictionary = json.load(d)
+
+originalDummyValueDictionaryKeys = list(dummyValueDictionary.keys())
+for originalKey in originalDummyValueDictionaryKeys:
+    dummyValueDictionary[originalKey+"_o"] = dummyValueDictionary[originalKey]
 
 matrixDictionaryKeys = matrixDictionary.keys()
 for k in matrixDictionaryKeys:
