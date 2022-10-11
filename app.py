@@ -56,6 +56,7 @@ for k in matrixDictionaryKeys:
 
 datingTrain = pd.read_csv('data/plotlyDashData/datingTrain.csv')
 datingTest = pd.read_csv('data/plotlyDashData/datingTest.csv')
+datingFull = pd.read_csv('data/plotlyDashData/datingFull.csv')
 
 match = datingTrain["match"]
 X = datingTrain.drop("match",axis=1).select_dtypes(include=['uint8','int64','float64'])
@@ -169,10 +170,8 @@ def createDistributionFromDummies(featureParam,fullX,figTitle):
 
     return fig
 
-def createStatisticsFromDummies(newEnsemble,featureParam,fullX,fully,figTitle):
-    newEnsemble.fit(fullX,fully)
-    fullDF = fullX
-    fullDF["match"] = fully
+def createStatisticsFromDummies(newEnsemble,featureParam,fullX,figTitle):
+    newEnsemble.fit(X,match)
     
     dummyCols = dummyDictionary[featureParam]
     statisticsDictionary = dict()
@@ -180,7 +179,7 @@ def createStatisticsFromDummies(newEnsemble,featureParam,fullX,fully,figTitle):
     statisticsDictionary["mean"] = []
     statisticsDictionary["standard error"] = []
     for dummyCol in dummyCols:
-        selectedRows = fullDF[fullDF[dummyCol]==1]
+        selectedRows = fullX[fullX[dummyCol]==1]
         if selectedRows.shape[0] == 0:
             pass
         else:
@@ -200,8 +199,8 @@ def createStatisticsFromDummies(newEnsemble,featureParam,fullX,fully,figTitle):
 
     return fig
 
-def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,fully,figTitle):
-    newEnsemble.fit(fullX,fully)
+def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,figTitle):
+    newEnsemble.fit(X,match)
     dummyCols = dummyDictionary[featureParam]
     yPredictFull = newEnsemble.predict_proba(fullX)[1]
     correlationDictionary = dict()
@@ -225,6 +224,37 @@ def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,fully,figTitle)
 
     return fig
 
+def createDistributionFromSamerace():
+    
+    counts = [datingFull]
+    
+    fig = go.bar(x=counts,y=["Different Race","Same Race"],title="Number of Entries that are Same/Different Race")
+
+    fig.update_layout(xaxis_title="Counts")
+
+    return fig
+
+def createStatisticsFromSamerace():
+    
+    
+    resultsDF = createDFFromDictionary(statisticsDictionary)
+
+    fig = go.bar(resultsDF, x="mean",y="label",error_x="standard error",
+    orientation="h",labels={"mean":"mean predicted probability"},
+    title="Statistics on Same/Different Race")
+
+    return fig 
+
+def createCorrelationFromSamerace():
+    
+    resultsDF = createDFFromDictionary(correlationDictionary)
+
+    fig = go.bar(resultsDF, x="spearman r value",y="label",
+    orientation="h",labels={"spearman r value":"Spearman R Correlation Value"},
+    title="Correlations on Same/Different Race")
+
+    return fig
+
 def createDistributionFromRange(featureParam,fullX):
 
     featureData = list(fullX["featureParam"].reshape(-1,))
@@ -233,7 +263,7 @@ def createDistributionFromRange(featureParam,fullX):
 
     return fig
 
-def createStatisticsFromRange(allModels,featureParam,fullX,fully):
+def createStatisticsFromRange(allModels,featureParam,fullX,):
     
     statisticsDictionary = dict()
     statisticsDictionary["modelName"] = [modelTuple[0] for modelTuple in allModels]
@@ -242,7 +272,7 @@ def createStatisticsFromRange(allModels,featureParam,fullX,fully):
     statisticsDictionary["error"] = []
 
     for selectedModel in allModels:
-        selectedModel[1].fit(fullX,fully)
+        selectedModel[1].fit(X,match)
         probabilities = selectedModel.predict_proba(fullX)[1].reshape(-1,)
         statisticsDictionary["predicted probability"].append(np.mean(probabilities))
         statisticsDictionary["error"].append(np.std(probabilities)/np.sqrt(fullX.shape[0]))
@@ -254,7 +284,7 @@ def createStatisticsFromRange(allModels,featureParam,fullX,fully):
 
     return fig
 
-def createCorrelationsFromRange(allModels,featureParam,fullX,fully,figTitle):
+def createCorrelationsFromRange(allModels,featureParam,fullX,figTitle):
     
     correlationDictionary = dict()
     correlationDictionary["model"] = []
@@ -262,7 +292,7 @@ def createCorrelationsFromRange(allModels,featureParam,fullX,fully,figTitle):
     correlationDictionary["color"] = []
     featureValues = fullX[featureParam].reshape(-1,)
     for modelTuple in allModels:
-        modelTuple[1].fit(fullX,fully)
+        modelTuple[1].fit(X,match)
         predicty = list(modelTuple[1].predict_proba(fullX)[1].reshape(-1,))
         corr,p = spearmanr(featureValues,predicty)
         significanceColor = "green" if p < 0.05 else "red"
