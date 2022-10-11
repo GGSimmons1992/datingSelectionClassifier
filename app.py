@@ -41,6 +41,9 @@ originalDummyValueDictionaryKeys = list(dummyValueDictionary.keys())
 for originalKey in originalDummyValueDictionaryKeys:
     dummyValueDictionary[originalKey+"_o"] = dummyValueDictionary[originalKey]
 
+with open("data/descriptionDictionary.json") as d:
+    descriptionDictionary = json.load(d)
+
 matrixDictionaryKeys = matrixDictionary.keys()
 for k in matrixDictionaryKeys:
     cm = np.array(matrixDictionary[k])
@@ -167,7 +170,7 @@ def createDistributionFromDummies(featureParam,fullX,figTitle):
     return fig
 
 def createStatisticsFromDummies(newEnsemble,featureParam,fullX,fully,figTitle):
-    newEnsemble.train(fullX,fully)
+    newEnsemble.fit(fullX,fully)
     fullDF = fullX
     fullDF["match"] = fully
     
@@ -198,7 +201,7 @@ def createStatisticsFromDummies(newEnsemble,featureParam,fullX,fully,figTitle):
     return fig
 
 def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,fully,figTitle):
-    newEnsemble.train(fullX,fully)
+    newEnsemble.fit(fullX,fully)
     dummyCols = dummyDictionary[featureParam]
     yPredictFull = newEnsemble.predict_proba(fullX)[1]
     correlationDictionary = dict()
@@ -222,12 +225,58 @@ def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,fully,figTitle)
 
     return fig
 
-def createStatisticsFromRange(allModels,featureParam,matchProfile):
-    resultsDF = pd.DataFrame()
-    return resultsDF
+def createDistributionFromRange(featureParam,fullX):
 
-def createCorrelationsFromRange(allModels,featureParam,matchProfile):
-    resultsDF = pd.DataFrame()
+    featureData = list(fullX["featureParam"].reshape(-1,))
+
+    fig = ff.create_distplot(x = featureData)
+
+    return fig
+
+def createStatisticsFromRange(allModels,featureParam,fullX,fully):
+    
+    statisticsDictionary = dict()
+    statisticsDictionary["modelName"] = [modelTuple[0] for modelTuple in allModels]
+    statisticsDictionary[featureParam] = np.linspace(min(fullX[featureParam].reshape(-1,)),max(fullX[featureParam].reshape(-1,)),100)
+    statisticsDictionary["predicted probability"] = []
+    statisticsDictionary["error"] = []
+
+    for selectedModel in allModels:
+        selectedModel[1].fit(fullX,fully)
+        probabilities = selectedModel.predict_proba(fullX)[1].reshape(-1,)
+        statisticsDictionary["predicted probability"].append(np.mean(probabilities))
+        statisticsDictionary["error"].append(np.std(probabilities)/np.sqrt(fullX.shape[0]))
+
+    resultsDF = createDFFromDictionary(statisticsDictionary)
+
+    fig = px.line(resultsDF, x=featureParam, y="predicted probability",error_y="error", color = "modelName",
+     title=f'Predicted probability of match based on {descriptionDictionary[featureParam]}')
+
+    return fig
+
+def createCorrelationsFromRange(allModels,featureParam,fullX,fully,figTitle):
+    
+    correlationDictionary = dict()
+    correlationDictionary["model"] = []
+    correlationDictionary["spearman r value"] = []
+    correlationDictionary["color"] = []
+    featureValues = fullX[featureParam].reshape(-1,)
+    for modelTuple in allModels:
+        modelTuple[1].fit(fullX,fully)
+        predicty = list(modelTuple[1].predict_proba(fullX)[1].reshape(-1,))
+        corr,p = spearmanr(featureValues,predicty)
+        significanceColor = "green" if p < 0.05 else "red"
+        correlationDictionary["model"].append(modelTuple[0] + f" p={round(p,2)}")
+        correlationDictionary["spearman r value"].append(corr)
+        correlationDictionary["color"].append(significanceColor)
+
+    resultsDF = createDFFromDictionary(correlationDictionary)
+
+    fig = go.bar(resultsDF, x="spearman r value",y="label",
+    orientation="h",labels={"spearman r value":"Spearman R Correlation Value"},
+    title=figTitle)
+
+    
     return resultsDF
 
 # Dash code
