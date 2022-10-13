@@ -347,7 +347,7 @@ sidebar = html.Div(style=sidebarstyle,children=[
                 ],
                 href=page["path"],
                 active="exact"
-            ) for page in [{"name":"Feature Analysis","path":"/featureanalysis"},{"name":"matchmakers","path":"/matchmakers"}]
+            ) for page in [{"name":"Feature Analysis","path":"/featureanalysis"},{"name":"Matchmakers","path":"/matchmakers"}]
         ],
         vertical=True,
         pills=True
@@ -452,8 +452,9 @@ app.layout = html.Div(children= [
     dash.dependencies.Output('content','children')],
     Input('url', 'pathname'))
 def updatePage(pathname):
-    print(pathname)
-    if "featureanalysis" in pathname.lower() or pathname.lower() == "/":
+    if pathname.lower() == "/":
+        return "Home", html.H3("Welcome to the Blind Dating Ensemble Vote Dashboard")
+    elif "featureanalysis" in pathname.lower():
         return "Feature Analysis",featureAnalysisLayout
     return "Matchmakers",matchmakersLayout
 
