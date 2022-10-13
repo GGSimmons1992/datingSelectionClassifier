@@ -374,7 +374,8 @@ for modelInfo in allEstimatorTuples:
                         orientation='h',
                         hovertext=list(metricsTable[modelInfo[0]].values()))))
                 ])
-            ])
+            ]),
+            html.Hr()
         ])
     else:
         modInfoLayout = html.Div(style=displayBlock,id=modelInfo[0] + "Info",children=[
@@ -400,7 +401,8 @@ for modelInfo in allEstimatorTuples:
                 html.Ol(children=[
                     html.Li(children=feat) for feat in (significantFeaturesDictionary[modelInfo[0]])
                 ])
-            ])
+            ]),
+            html.Hr()
         ])
     modelInfoList.append(dcc.Loading(children=modInfoLayout))
 
@@ -414,7 +416,8 @@ featureAnalysisTemplates = [
                 html.Div(style=col6,children=html.Div(style=col12,children=dcc.Loading(dcc.Graph(id=genderType+"Diversity")))),
                 html.Div(style=col6,children=html.Div(style=col12,children=dcc.Loading(dcc.Graph(id=genderType+"Statistics")))),
             ]),
-            html.Div(children=dcc.Loading(dcc.Graph(id=genderType+"Correlations")))
+            html.Div(children=dcc.Loading(dcc.Graph(id=genderType+"Correlations"))),
+            html.Hr()
         ])
     ) for genderType in ["male","female","overall"]]
 
