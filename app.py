@@ -584,74 +584,92 @@ def updatepreciseForestInfo(models):
         hideValue = displayBlock
     return hideValue
 
-
 #Analysis callbacks
-for dfType in ["male","female","overall"]:
-    @app.callback(
-        Output(dfType+"Info","style"),
-        Input('featureSelect',"value"),
-            prevent_initial_call=True)
-    def updateStyles(featureParam):
-        if featureParam == "":
-            return displayHidden
-        elif featureParam == "samerace" and dfType in ["male","female"]:
-            return displayHidden
+@app.callback(
+    Output("maleInfo","style"),
+    Output("femaleInfo","style"),
+    Output("overallInfo","style"),
+    Input('featureSelect',"value"),
+        prevent_initial_call=True)
+def updateStyles(featureParam):
+    if featureParam == "":
+        return displayHidden,displayHidden,displayHidden
+    elif featureParam == "samerace":
+        return displayHidden,displayHidden,displayBlock
+    else:
+        return displayBlock,displayBlock,displayBlock
+
+@app.callback(
+    Output("maleDiversity","style"),
+    Output("femaleDiversity","style"),
+    Output("overallDiversity","style"),
+    Input('featureSelect',"value"),
+        prevent_initial_call=True)
+def updateDistributions(featureParam):
+    if featureParam == "":
+        return defaultBar,defaultBar,defaultBar
+    elif featureParam == "samerace":
+        return defaultBar,defaultBar,createDistributionFromSamerace()
+    else:
+        if featureParam in dummyDictionary.keys():
+            m = createDistributionFromDummies(featureParam,datingMale,f"Distribution Amongst {descriptionDictionary[featureParam]} Values")
+            f = createDistributionFromDummies(featureParam,datingFemale,f"Distribution Amongst {descriptionDictionary[featureParam]} Values")
+            o = createDistributionFromDummies(featureParam,datingFull,f"Distribution Amongst {descriptionDictionary[featureParam]} Values")
         else:
-            return displayBlock
+            m = createDistributionFromRange(featureParam,datingMale)
+            f = createDistributionFromRange(featureParam,datingFemale)
+            o = createDistributionFromRange(featureParam,datingFull)
+        return m,f,o
 
-for dfType in ["male","female","overall"]:
-    for graphType in ["Diversity","Statistics","Correlations"]:
-        @app.callback(
-            Output(dfType+graphType,"figure"),
-            Input('modelSelection','value'),
-            Input('featureSelect',"value"),
-             prevent_initial_call=True)
-        def updateGraphs(models,featureParam):
-            if featureParam == "":
-                return defaultBar
+@app.callback(
+    Output("maleStatistics","style"),
+    Output("femaleStatistics","style"),
+    Output("overallStatistics","style"),
+    Input('modelSelection','value'),
+    Input('featureSelect',"value"),
+        prevent_initial_call=True)
+def updateStatistics(models,featureParam):
+    if featureParam == "":
+        return defaultBar,defaultBar,defaultBar
+    selectedModels = generateIncludedModels(models)
+    newEnsemble = VotingClassifier(estimators=selectedModels,voting="soft")
+    if featureParam == "samerace":
+        return defaultBar,defaultBar,createStatisticsFromSamerace(newEnsemble)
+    else:
+        if featureParam in dummyDictionary.keys():
+            m = createStatisticsFromDummies(newEnsemble,featureParam,datingMale,f"{descriptionDictionary[featureParam]} Statistics")
+            f = createStatisticsFromDummies(newEnsemble,featureParam,datingFemale,f"{descriptionDictionary[featureParam]} Statistics")
+            o = createStatisticsFromDummies(newEnsemble,featureParam,datingFull,f"{descriptionDictionary[featureParam]} Statistics")
+        else:
+            m = createStatisticsFromRange(newEnsemble,models,featureParam,datingMale)
+            f = createStatisticsFromRange(newEnsemble,models,featureParam,datingFemale)
+            o = createStatisticsFromRange(newEnsemble,models,featureParam,datingFull)
+        return m,f,o
 
-            if dfType == "male":
-                chosenDF = datingMale
-            if dfType == "female":
-                chosenDF = datingFemale
-            else:
-                chosenDF = datingFull
-            
-            if graphType == "Diversity":
-                if featureParam == "samerace":
-                    return createDistributionFromSamerace()
-                elif featureParam in dummyDictionary.keys():
-                    return createDistributionFromDummies(featureParam,chosenDF,f"Distribution Amongst {descriptionDictionary[featureParam]} Values")
-                else:
-                    return createDistributionFromRange(featureParam,chosenDF)
-            
-            selectedModels = generateIncludedModels(models)
-            newEnsemble = VotingClassifier(estimators=selectedModels,voting="soft")
-            
-            if featureParam == "samerace":
-                if dfType in ["male","female"]:
-                    return defaultBar
-                else:
-                    if graphType == "Statistics":
-                        return createStatisticsFromSamerace(newEnsemble)
-                    else:
-                        return createCorrelationsFromSamerace(newEnsemble)
-            elif featureParam in dummyDictionary.keys():
-                if graphType == "Statistics":
-                    return createStatisticsFromDummies(newEnsemble,featureParam,chosenDF,f"{descriptionDictionary[featureParam]} Statistics")
-                else:
-                    return createCorrelationsFromDummies(newEnsemble,featureParam,chosenDF,f"{descriptionDictionary[featureParam]} Correlations")
-            else:
-                if graphType == "Statistics":
-                    return createStatisticsFromRange(newEnsemble,models,featureParam,chosenDF)
-                else:
-                    return createCorrelationsFromRange(newEnsemble,models,featureParam,chosenDF,f"{descriptionDictionary[featureParam]} Correlations")
-
-
-
-
-
-
+@app.callback(
+    Output("maleCorrelations","style"),
+    Output("femaleCorrelations","style"),
+    Output("overallCorrelations","style"),
+    Input('modelSelection','value'),
+    Input('featureSelect',"value"),
+        prevent_initial_call=True)
+def updateCorrelations(models,featureParam):
+    if featureParam == "":
+        return defaultBar,defaultBar,defaultBar
+    selectedModels = generateIncludedModels(models)
+    newEnsemble = VotingClassifier(estimators=selectedModels,voting="soft")
+    if featureParam == "samerace":
+        return defaultBar,defaultBar,createCorrelationsFromSamerace(newEnsemble)
+    else:
+        if featureParam in dummyDictionary.keys():
+            m = createCorrelationsFromDummies(newEnsemble,featureParam,datingMale,f"{descriptionDictionary[featureParam]} Correlations")
+            f = createCorrelationsFromDummies(newEnsemble,featureParam,datingFemale,f"{descriptionDictionary[featureParam]} Correlations")
+            o = createCorrelationsFromDummies(newEnsemble,featureParam,datingFull,f"{descriptionDictionary[featureParam]} Correlations")
+        else:
+            m = createCorrelationsFromRange(newEnsemble,models,featureParam,datingMale,f"{descriptionDictionary[featureParam]} Correlations")
+            f = createCorrelationsFromRange(newEnsemble,models,featureParam,datingFemale,f"{descriptionDictionary[featureParam]} Correlations")
+            o = createCorrelationsFromRange(newEnsemble,models,featureParam,datingFull,f"{descriptionDictionary[featureParam]} Correlations")
+        return m,f,o
 
 #run app
 if __name__ == '__main__':
