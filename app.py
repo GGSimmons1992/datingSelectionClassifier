@@ -173,7 +173,7 @@ def createDistributionFromDummies(featureParam,fullX,figTitle):
     
     counts = [sum(fullX[col]) for col in dummyCols]
 
-    fig = go.Bar(x=counts,y=labels,title=figTitle)
+    fig = go.Figure(go.Bar(x=counts,y=labels))
 
     fig.update_layout(xaxis_title="counts",yaxis_title=f"{featureParam} Values")
 
@@ -192,7 +192,7 @@ def createStatisticsFromDummies(newEnsemble,featureParam,fullX,figTitle):
         if selectedRows.shape[0] == 0:
             pass
         else:
-            selectedX = selectedRows.drop("match",axis=1)
+            selectedX = selectedRows
             predicty = (newEnsemble.predict_proba(selectedX)[:,1])
             yMean = np.mean(predicty)
             ySE = np.std(predicty)/np.sqrt(len(predicty))
@@ -288,7 +288,7 @@ def createDistributionFromRange(featureParam,fullX):
 
     featureData = list(fullX[featureParam])
 
-    fig = ff.create_distplot(featureData,[f"{featureParam} Distribution"])
+    fig = ff.create_distplot([featureData],[f"{featureParam} Distribution"])
 
     return fig
 
@@ -305,12 +305,9 @@ def createStatisticsFromRange(newEnsemble,selectedModels,featureParam,fullX):
 
     resultsDF = createDFFromDictionary(statisticsDictionary)
 
-    scatterFig = px.scatter(resultsDF, x=featureParam, y=[modelTuple[0] for modelTuple in allModels],
+    fig = px.scatter(resultsDF, x=featureParam, y=[modelTuple[0] for modelTuple in allModels],
      title=f'Predicted probability of match based on {descriptionDictionary[featureParam]}')
 
-    lineFig = px.line(resultsDF, x=featureParam, y="Ensemble")
-
-    fig = go.Figure(data = scatterFig.data + lineFig.data)
     return fig
 
 def createCorrelationsFromRange(newEnsemble,selectedModels,featureParam,fullX,figTitle):
