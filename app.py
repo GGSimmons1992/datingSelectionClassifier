@@ -172,10 +172,15 @@ def createDistributionFromDummies(featureParam,fullX,figTitle):
     labels = [dummyValueDictionary[dummyCol] for dummyCol in dummyCols]
     
     counts = [sum(fullX[col]) for col in dummyCols]
+    yLabel = f"{featureParam} Values"
+    resultsDF = pd.DataFrame({
+        "Counts":counts,
+        yLabel: labels
+    },columns = ["Counts",yLabel])
 
-    fig = go.Figure(go.Bar(x=counts,y=labels))
-
-    fig.update_layout(xaxis_title="counts",yaxis_title=f"{featureParam} Values")
+    fig = px.bar(resultsDF, x="Counts",y=yLabel,
+    orientation="h",labels={"Counts":"Counts",yLabel:yLabel},
+    title=figTitle)
 
     return fig
 
