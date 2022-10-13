@@ -112,6 +112,8 @@ originalEstimtatorTuples = [
 ensembleVote = VotingClassifier(estimators = originalEstimtatorTuples)
 allEstimatorTuples = [("Ensemble",ensembleVote)] + originalEstimtatorTuples
 
+defaultBar = go.Bar(x=[],y=[])
+
 for estimatorTuple in allEstimatorTuples:
     (estimatorTuple[1]).fit(X,match)
 
@@ -313,8 +315,7 @@ def createCorrelationsFromRange(allModels,featureParam,fullX,figTitle):
         correlationDictionary["color"].append(significanceColor)
 
     fig = go.Bar(x=correlationDictionary["spearman r value"],y=correlationDictionary["model"],
-    orientation="h",
-    title=figTitle)
+    orientation="h")
 
     fig.update_layout(title_text=figTitle,
     xaxis_title="Spearman R Correlation Value",yaxis_title="Model and p-Value")
@@ -458,7 +459,7 @@ def updatePage(pathname):
     if pathname.lower() == "/":
         return "Home", html.H3("Welcome to the Blind Dating Ensemble Vote Dashboard")
     elif "featureanalysis" in pathname.lower():
-        return "Feature Analysis",featureAnalysisLayout
+        return "Feature Analysis",featureAnalysisLayout    
     return "Matchmakers",matchmakersLayout
 
 #modelSection callback
@@ -469,9 +470,9 @@ def updatePage(pathname):
     [dash.dependencies.Input('modelSelection', 'value')], prevent_initial_call=True)
 def updateEnsembleInfo(models):
     if len(models)==0:
-        return px.imshow(np.zeros((2,2))),go.Figure(go.Bar(dict())),displayHidden
+        return px.imshow(np.zeros((2,2))),go.Figure(defaultBar),displayHidden
     if len(models)==1:
-        return px.imshow(np.zeros((2,2))),go.Figure(go.Bar(dict())),displayHidden
+        return px.imshow(np.zeros((2,2))),go.Figure(defaultBar),displayHidden
 
     includedModels = generateIncludedModels(models)
     
@@ -600,7 +601,7 @@ for dfType in ["male","female","overall"]:
              prevent_initial_call=True)
         def updateGraphs(models,featureParam):
             if featureParam == "":
-                return go.Bar({})
+                return defaultBar
 
             if dfType == "male":
                 chosenDF = datingMale
@@ -623,7 +624,7 @@ for dfType in ["male","female","overall"]:
             
             if featureParam == "samerace":
                 if dfType in ["male","female"]:
-                    return go.Bar({})
+                    return defaultBar
                 else:
                     if graphType == "Statistics":
                         return createStatisticsFromSamerace(newEnsemble)
