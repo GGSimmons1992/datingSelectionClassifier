@@ -227,7 +227,10 @@ def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,figTitle):
 
     resultsDF = createDFFromDictionary(correlationDictionary)
 
-    fig = px.bar(resultsDF, x="spearman r value",y="label",
+    fig = px.bar(resultsDF, x="spearman r value",y="label",color="color",color_discrete_map={
+        'red': 'red',
+        'green': 'green'
+    },
     orientation="h",labels={"spearman r value":"Spearman R Correlation Value","label":featureParam+" Value and P-Value"},
     title=figTitle)
 
@@ -272,7 +275,10 @@ def createCorrelationsFromSamerace(newEnsemble):
     corr,p = spearmanr(list(X["samerace"]),list(predicty))
     significanceColor = "green" if p < 0.05 else "red"
 
-    fig = go.Bar(x=[corr],color=[significanceColor],
+    fig = go.Bar(x=[corr],color=[significanceColor],color_discrete_map={
+        'red': 'red',
+        'green': 'green'
+    },
     orientation="h",
     title=f"Correlations on Same/Different Race p={round(corr,2)}")
 
@@ -282,7 +288,7 @@ def createDistributionFromRange(featureParam,fullX):
 
     featureData = list(fullX[featureParam])
 
-    fig = ff.create_distplot(x = featureData)
+    fig = ff.create_distplot(featureData)
 
     return fig
 
@@ -299,7 +305,7 @@ def createStatisticsFromRange(newEnsemble,selectedModels,featureParam,fullX):
 
     resultsDF = createDFFromDictionary(statisticsDictionary)
 
-    fig = px.line(resultsDF, x=featureParam, y=[modelTuple[0] for modelTuple in allModels],
+    fig = px.scatter(resultsDF, x=featureParam, y=[modelTuple[0] for modelTuple in allModels],
      title=f'Predicted probability of match based on {descriptionDictionary[featureParam]}')
 
     return fig
@@ -323,7 +329,10 @@ def createCorrelationsFromRange(newEnsemble,selectedModels,featureParam,fullX,fi
 
     resultsDF = createDFFromDictionary(correlationDictionary)
 
-    fig = px.bar(resultsDF, x="spearman r value",y="model",color="color",
+    fig = px.bar(resultsDF, x="spearman r value",y="model",color="color",color_discrete_map={
+        'red': 'red',
+        'green': 'green'
+    },
     orientation="h",labels={"spearman r value":"Spearman R Correlation Value","model":"Model and P-Value"},
     title=figTitle)
 
@@ -600,9 +609,9 @@ def updateStyles(featureParam):
         return displayBlock,displayBlock,displayBlock
 
 @app.callback(
-    Output("maleDiversity","style"),
-    Output("femaleDiversity","style"),
-    Output("overallDiversity","style"),
+    Output("maleDiversity","figure"),
+    Output("femaleDiversity","figure"),
+    Output("overallDiversity","figure"),
     Input('featureSelect',"value"),
         prevent_initial_call=True)
 def updateDistributions(featureParam):
@@ -622,9 +631,9 @@ def updateDistributions(featureParam):
         return m,f,o
 
 @app.callback(
-    Output("maleStatistics","style"),
-    Output("femaleStatistics","style"),
-    Output("overallStatistics","style"),
+    Output("maleStatistics","figure"),
+    Output("femaleStatistics","figure"),
+    Output("overallStatistics","figure"),
     Input('modelSelection','value'),
     Input('featureSelect',"value"),
         prevent_initial_call=True)
@@ -647,9 +656,9 @@ def updateStatistics(models,featureParam):
         return m,f,o
 
 @app.callback(
-    Output("maleCorrelations","style"),
-    Output("femaleCorrelations","style"),
-    Output("overallCorrelations","style"),
+    Output("maleCorrelations","figure"),
+    Output("femaleCorrelations","figure"),
+    Output("overallCorrelations","figure"),
     Input('modelSelection','value'),
     Input('featureSelect',"value"),
         prevent_initial_call=True)
