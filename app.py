@@ -288,21 +288,18 @@ def createDistributionFromRange(featureParam,fullX):
 
 def createStatisticsFromRange(newEnsemble,selectedModels,featureParam,fullX):
     newEnsemble.fit(X,match)
+    fullXSorted = fullX.copy().sort_values(by=featureParam)
     allModels = [("Ensemble",newEnsemble)] + [modelTuple for modelTuple in originalEstimtatorTuples if modelTuple[0] in selectedModels]
+    
     statisticsDictionary = dict()
-    statisticsDictionary["modelName"] = [modelTuple[0] for modelTuple in allModels]
-    statisticsDictionary[featureParam] = np.linspace(min(fullX[featureParam]),max(fullX[featureParam]),100)
-    statisticsDictionary["predicted probability"] = []
-    statisticsDictionary["error"] = []
+    statisticsDictionary[featureParam] = np.array(fullXSorted[featureParam]).reshape(-1,).tolist()
 
     for selectedModel in allModels:
-        probabilities = np.array(selectedModel.predict_proba(fullX)[:,1]).reshape(-1,).tolist()
-        statisticsDictionary["predicted probability"].append(np.mean(probabilities))
-        statisticsDictionary["error"].append(np.std(probabilities)/np.sqrt(fullX.shape[0]))
+        statisticsDictionary[selectedModel[0]] = np.array(selectedModel[1].predict_proba(fullXSorted)[:,1]).reshape(-1,).tolist()
 
     resultsDF = createDFFromDictionary(statisticsDictionary)
 
-    fig = px.line(resultsDF, x=featureParam, y="predicted probability",error_y="error", color = "modelName",
+    fig = px.line(resultsDF, x=featureParam, y=[modelTuple[0] for modelTuple in allModels],
      title=f'Predicted probability of match based on {descriptionDictionary[featureParam]}')
 
     return fig
@@ -326,7 +323,7 @@ def createCorrelationsFromRange(newEnsemble,selectedModels,featureParam,fullX,fi
 
     resultsDF = createDFFromDictionary(correlationDictionary)
 
-    fig = px.bar(resultsDF, x="spearman r value",y="model",
+    fig = px.bar(resultsDF, x="spearman r value",y="model",color="color",
     orientation="h",labels={"spearman r value":"Spearman R Correlation Value","model":"Model and P-Value"},
     title=figTitle)
 
