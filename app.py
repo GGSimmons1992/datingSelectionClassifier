@@ -313,7 +313,7 @@ def createCorrelationsFromRange(allModels,featureParam,fullX,figTitle):
         correlationDictionary["color"].append(significanceColor)
 
     fig = go.Bar(x=correlationDictionary["spearman r value"],y=correlationDictionary["model"],
-    orientation="h",labels={"spearman r value":"Spearman R Correlation Value"},
+    orientation="h",
     title=figTitle)
 
     fig.update_layout(title_text=figTitle,
