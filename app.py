@@ -110,12 +110,15 @@ originalEstimtatorTuples = [
     ]
 
 ensembleVote = VotingClassifier(estimators = originalEstimtatorTuples)
+
+
+for estimatorTuple in originalEstimtatorTuples:
+    (estimatorTuple[1]).fit(X,match)
+ensembleVote.fit(X,match)
+
 allEstimatorTuples = [("Ensemble",ensembleVote)] + originalEstimtatorTuples
 
-defaultBar = go.Bar(x=[],y=[])
-
-for estimatorTuple in allEstimatorTuples:
-    (estimatorTuple[1]).fit(X,match)
+defaultBar = px.bar(pd.DataFrame({"blank":[]},columns=["blank"]))
 
 def generateIncludedModels(models):
     includedModels = []
@@ -197,7 +200,9 @@ def createStatisticsFromDummies(newEnsemble,featureParam,fullX,figTitle):
             statisticsDictionary["mean"].append(yMean)
             statisticsDictionary["standard error"].append(ySE)
     
-    fig = go.Bar(statisticsDictionary, x="mean",y="label",error_x="standard error",
+    resultsDF = createDFFromDictionary(statisticsDictionary)
+
+    fig = px.bar(resultsDF, x="mean",y="label",error_x="standard error",
     orientation="h",labels={"mean":"mean predicted probability","label":featureParam+" value"},
     title=figTitle)
 
@@ -220,8 +225,10 @@ def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,figTitle):
         correlationDictionary["spearman r value"].append(corr)
         correlationDictionary["color"].append(significanceColor)
 
-    fig = go.Bar(correlationDictionary, x="spearman r value",y="label",
-    orientation="h",labels={"spearman r value":"Spearman R Correlation Value","label":featureParam+" value"},
+    resultsDF = createDFFromDictionary(correlationDictionary)
+
+    fig = px.bar(resultsDF, x="spearman r value",y="label",
+    orientation="h",labels={"spearman r value":"Spearman R Correlation Value","label":featureParam+" Value and P-Value"},
     title=figTitle)
 
     return fig
@@ -251,7 +258,9 @@ def createStatisticsFromSamerace(newEnsemble):
         statisticsDictionary["predicted probability"].append(np.mean(probabilities))
         statisticsDictionary["standard error"].append(np.std(probabilities)/np.sqrt(df.shape[0]))
 
-    fig = go.Bar(statisticsDictionary, x="predicted probability",y="label",error_x="standard error",
+    resultsDF = createDFFromDictionary(statisticsDictionary) 
+
+    fig = px.bar(resultsDF, x="predicted probability",y="label",error_x="standard error",
     orientation="h",
     title="Statistics on Same/Different Race")
 
@@ -277,8 +286,9 @@ def createDistributionFromRange(featureParam,fullX):
 
     return fig
 
-def createStatisticsFromRange(allModels,featureParam,fullX):
-    
+def createStatisticsFromRange(newEnsemble,selectedModels,featureParam,fullX):
+    newEnsemble.fit(X,match)
+    allModels = [("Ensemble",newEnsemble)] + [modelTuple for modelTuple in originalEstimtatorTuples if modelTuple[0] in selectedModels]
     statisticsDictionary = dict()
     statisticsDictionary["modelName"] = [modelTuple[0] for modelTuple in allModels]
     statisticsDictionary[featureParam] = np.linspace(min(fullX[featureParam]),max(fullX[featureParam]),100)
@@ -286,7 +296,6 @@ def createStatisticsFromRange(allModels,featureParam,fullX):
     statisticsDictionary["error"] = []
 
     for selectedModel in allModels:
-        selectedModel[1].fit(X,match)
         probabilities = np.array(selectedModel.predict_proba(fullX)[:,1]).reshape(-1,).tolist()
         statisticsDictionary["predicted probability"].append(np.mean(probabilities))
         statisticsDictionary["error"].append(np.std(probabilities)/np.sqrt(fullX.shape[0]))
@@ -298,15 +307,16 @@ def createStatisticsFromRange(allModels,featureParam,fullX):
 
     return fig
 
-def createCorrelationsFromRange(allModels,featureParam,fullX,figTitle):
-    
+def createCorrelationsFromRange(newEnsemble,selectedModels,featureParam,fullX,figTitle):
+    newEnsemble.fit(X,match)
+    allModels = [("Ensemble",newEnsemble)] + [modelTuple for modelTuple in originalEstimtatorTuples if modelTuple[0] in selectedModels]
+
     correlationDictionary = dict()
     correlationDictionary["model"] = []
     correlationDictionary["spearman r value"] = []
     correlationDictionary["color"] = []
     featureValues = np.array(fullX[featureParam]).reshape(-1).tolist()
     for modelTuple in allModels:
-        modelTuple[1].fit(X,match)
         predicty = np.array(modelTuple[1].predict_proba(fullX)[:,1]).reshape(-1).tolist()
         corr,p = spearmanr(featureValues,predicty)
         significanceColor = "green" if p < 0.05 else "red"
@@ -314,11 +324,11 @@ def createCorrelationsFromRange(allModels,featureParam,fullX,figTitle):
         correlationDictionary["spearman r value"].append(corr)
         correlationDictionary["color"].append(significanceColor)
 
-    fig = go.Bar(x=correlationDictionary["spearman r value"],y=correlationDictionary["model"],
-    orientation="h")
+    resultsDF = createDFFromDictionary(correlationDictionary)
 
-    fig.update_layout(title_text=figTitle,
-    xaxis_title="Spearman R Correlation Value",yaxis_title="Model and p-Value")
+    fig = px.bar(resultsDF, x="spearman r value",y="model",
+    orientation="h",labels={"spearman r value":"Spearman R Correlation Value","model":"Model and P-Value"},
+    title=figTitle)
 
     return fig
 
@@ -620,7 +630,6 @@ for dfType in ["male","female","overall"]:
             
             selectedModels = generateIncludedModels(models)
             newEnsemble = VotingClassifier(estimators=selectedModels,voting="soft")
-            allModels = [("Ensemble",newEnsemble)] + selectedModels
             
             if featureParam == "samerace":
                 if dfType in ["male","female"]:
@@ -637,9 +646,9 @@ for dfType in ["male","female","overall"]:
                     return createCorrelationsFromDummies(newEnsemble,featureParam,chosenDF,f"{descriptionDictionary[featureParam]} Correlations")
             else:
                 if graphType == "Statistics":
-                    return createStatisticsFromRange(allModels,featureParam,chosenDF)
+                    return createStatisticsFromRange(newEnsemble,models,featureParam,chosenDF)
                 else:
-                    return createCorrelationsFromRange(allModels,featureParam,chosenDF,f"{descriptionDictionary[featureParam]} Correlations")
+                    return createCorrelationsFromRange(newEnsemble,models,featureParam,chosenDF,f"{descriptionDictionary[featureParam]} Correlations")
 
 
 
