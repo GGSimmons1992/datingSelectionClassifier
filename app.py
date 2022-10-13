@@ -63,6 +63,10 @@ X = datingTrain.drop("match",axis=1).select_dtypes(include=['uint8','int64','flo
 matchTest = datingTest["match"]
 XTest = datingTest.drop("match",axis=1).select_dtypes(include=['uint8','int64','float64'])
 
+datingMale = datingFull[datingFull["gender"]==1].drop("match",axis=1)
+datingFemale = datingFull[datingFull["gender"]==0].drop("match",axis=1)
+datingFull = datingFull.drop("match",axis=1)
+
 with open('data/processedData/treeParams.json') as d:
     treeParams = json.load(d)
     preciseTreeParams = treeParams["preciseTreeParams"]
@@ -162,9 +166,9 @@ def createDistributionFromDummies(featureParam,fullX,figTitle):
     dummyCols = dummyDictionary[featureParam]
     labels = [dummyValueDictionary[dummyCol] for dummyCol in dummyCols]
     
-    counts = [sum(fullX[col].reshape(-1,)) for col in dummyCols]
+    counts = [sum(fullX[col]) for col in dummyCols]
 
-    fig = go.bar(x=counts,y=labels,title=figTitle)
+    fig = go.Bar(x=counts,y=labels,title=figTitle)
 
     fig.update_layout(xaxis_title="counts",yaxis_title=f"{featureParam} Values")
 
@@ -184,16 +188,14 @@ def createStatisticsFromDummies(newEnsemble,featureParam,fullX,figTitle):
             pass
         else:
             selectedX = selectedRows.drop("match",axis=1)
-            predicty = (newEnsemble.predict_proba(selectedX)[1]).reshape(-1,)
+            predicty = (newEnsemble.predict_proba(selectedX)[:,1])
             yMean = np.mean(predicty)
             ySE = np.std(predicty)/np.sqrt(len(predicty))
             statisticsDictionary["label"].append(dummyValueDictionary[dummyCol])
             statisticsDictionary["mean"].append(yMean)
             statisticsDictionary["standard error"].append(ySE)
     
-    resultsDF = createDFFromDictionary(statisticsDictionary)
-
-    fig = go.bar(resultsDF, x="mean",y="label",error_x="standard error",
+    fig = go.Bar(statisticsDictionary, x="mean",y="label",error_x="standard error",
     orientation="h",labels={"mean":"mean predicted probability","label":featureParam+" value"},
     title=figTitle)
 
@@ -202,7 +204,7 @@ def createStatisticsFromDummies(newEnsemble,featureParam,fullX,figTitle):
 def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,figTitle):
     newEnsemble.fit(X,match)
     dummyCols = dummyDictionary[featureParam]
-    yPredictFull = newEnsemble.predict_proba(fullX)[1]
+    yPredictFull = np.array(newEnsemble.predict_proba(fullX)[:,1]).reshape(-1,).tolist()
     correlationDictionary = dict()
     correlationDictionary["label"] = []
     correlationDictionary["spearman r value"] = []
@@ -210,15 +212,13 @@ def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,figTitle):
 
     for dummyCol in dummyCols:
         dummyLabel = dummyValueDictionary[dummyCol]
-        corr,p = spearmanr(list(fullX[dummyCol]),list(yPredictFull))
+        corr,p = spearmanr(np.array(fullX[dummyCol]).reshape(-1,).tolist(),list(yPredictFull))
         significanceColor = "green" if p < 0.05 else "red"
-        correlationDictionary["label"].append(dummyLabel + f" p={round(p,2)}")
+        correlationDictionary["label"].append(dummyLabel + f" p={np.round(p,2)}")
         correlationDictionary["spearman r value"].append(corr)
         correlationDictionary["color"].append(significanceColor)
 
-    resultsDF = createDFFromDictionary(correlationDictionary)
-
-    fig = go.bar(resultsDF, x="spearman r value",y="label",
+    fig = go.Bar(correlationDictionary, x="spearman r value",y="label",
     orientation="h",labels={"spearman r value":"Spearman R Correlation Value","label":featureParam+" value"},
     title=figTitle)
 
@@ -226,54 +226,66 @@ def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,figTitle):
 
 def createDistributionFromSamerace():
     
-    counts = [datingFull]
+    counts = [datingFull[datingFull["samerace"] == val].shape[0] for val in [0,1]]
     
-    fig = go.bar(x=counts,y=["Different Race","Same Race"],title="Number of Entries that are Same/Different Race")
+    fig = go.Bar(x=counts,y=["Different Race","Same Race"],title="Number of Entries that are Same/Different Race")
 
     fig.update_layout(xaxis_title="Counts")
 
-    return fig
-
-def createStatisticsFromSamerace():
-    
-    
-    resultsDF = createDFFromDictionary(statisticsDictionary)
-
-    fig = go.bar(resultsDF, x="mean",y="label",error_x="standard error",
-    orientation="h",labels={"mean":"mean predicted probability"},
-    title="Statistics on Same/Different Race")
-
     return fig 
 
-def createCorrelationFromSamerace():
-    
-    resultsDF = createDFFromDictionary(correlationDictionary)
+def createStatisticsFromSamerace(newEnsemble):
+    newEnsemble.fit(X,match)
+    sameraceDF = datingFull[datingFull["samerace"]==1]
+    differentDF = datingFull[datingFull["samerace"]==0]
 
-    fig = go.bar(resultsDF, x="spearman r value",y="label",
-    orientation="h",labels={"spearman r value":"Spearman R Correlation Value"},
-    title="Correlations on Same/Different Race")
+    statisticsDictionary = dict()
+    statisticsDictionary["predicted probability"] = []
+    statisticsDictionary["label"] = ["Different Race","Same Race"]
+    statisticsDictionary["standard error"] = []
+
+    for df in [differentDF,sameraceDF]:
+        probabilities = list(newEnsemble.predict_proba(df)[:,1])
+        statisticsDictionary["predicted probability"].append(np.mean(probabilities))
+        statisticsDictionary["standard error"].append(np.std(probabilities)/np.sqrt(df.shape[0]))
+
+    fig = go.Bar(statisticsDictionary, x="predicted probability",y="label",error_x="standard error",
+    orientation="h",
+    title="Statistics on Same/Different Race")
+
+    return fig
+
+def createCorrelationsFromSamerace(newEnsemble):
+    newEnsemble.fit(X,match)
+    predicty = np.array(newEnsemble.predict_proba(datingFull)[:,1]).reshape(-1).tolist()
+    corr,p = spearmanr(list(X["samerace"]),list(predicty))
+    significanceColor = "green" if p < 0.05 else "red"
+
+    fig = go.Bar(x=[corr],color=[significanceColor],
+    orientation="h",
+    title=f"Correlations on Same/Different Race p={round(corr,2)}")
 
     return fig
 
 def createDistributionFromRange(featureParam,fullX):
 
-    featureData = list(fullX["featureParam"].reshape(-1,))
+    featureData = list(fullX[featureParam])
 
     fig = ff.create_distplot(x = featureData)
 
     return fig
 
-def createStatisticsFromRange(allModels,featureParam,fullX,):
+def createStatisticsFromRange(allModels,featureParam,fullX):
     
     statisticsDictionary = dict()
     statisticsDictionary["modelName"] = [modelTuple[0] for modelTuple in allModels]
-    statisticsDictionary[featureParam] = np.linspace(min(fullX[featureParam].reshape(-1,)),max(fullX[featureParam].reshape(-1,)),100)
+    statisticsDictionary[featureParam] = np.linspace(min(fullX[featureParam]),max(fullX[featureParam]),100)
     statisticsDictionary["predicted probability"] = []
     statisticsDictionary["error"] = []
 
     for selectedModel in allModels:
         selectedModel[1].fit(X,match)
-        probabilities = selectedModel.predict_proba(fullX)[1].reshape(-1,)
+        probabilities = np.array(selectedModel.predict_proba(fullX)[:,1]).reshape(-1,).tolist()
         statisticsDictionary["predicted probability"].append(np.mean(probabilities))
         statisticsDictionary["error"].append(np.std(probabilities)/np.sqrt(fullX.shape[0]))
 
@@ -290,24 +302,24 @@ def createCorrelationsFromRange(allModels,featureParam,fullX,figTitle):
     correlationDictionary["model"] = []
     correlationDictionary["spearman r value"] = []
     correlationDictionary["color"] = []
-    featureValues = fullX[featureParam].reshape(-1,)
+    featureValues = np.array(fullX[featureParam]).reshape(-1).tolist()
     for modelTuple in allModels:
         modelTuple[1].fit(X,match)
-        predicty = list(modelTuple[1].predict_proba(fullX)[1].reshape(-1,))
+        predicty = np.array(modelTuple[1].predict_proba(fullX)[:,1]).reshape(-1).tolist()
         corr,p = spearmanr(featureValues,predicty)
         significanceColor = "green" if p < 0.05 else "red"
-        correlationDictionary["model"].append(modelTuple[0] + f" p={round(p,2)}")
+        correlationDictionary["model"].append(modelTuple[0] + f" p={np.round(p,2)}")
         correlationDictionary["spearman r value"].append(corr)
         correlationDictionary["color"].append(significanceColor)
 
-    resultsDF = createDFFromDictionary(correlationDictionary)
-
-    fig = go.bar(resultsDF, x="spearman r value",y="label",
+    fig = go.Bar(x=correlationDictionary["spearman r value"],y=correlationDictionary["model"],
     orientation="h",labels={"spearman r value":"Spearman R Correlation Value"},
     title=figTitle)
 
-    
-    return resultsDF
+    fig.update_layout(title_text=figTitle,
+    xaxis_title="Spearman R Correlation Value",yaxis_title="Model and p-Value")
+
+    return fig
 
 # Dash code
 app = Dash(__name__,suppress_callback_exceptions=True,external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -395,18 +407,30 @@ for modelInfo in allEstimatorTuples:
 matchmakersLayout = html.Div(style=col12,children=modelInfoList)
 
 featureAnalysisTemplates = [
-    dcc.Loading(children=[
+    dcc.Loading(
         html.Div(style=displayHidden,id=genderType+"Info",children=[
-            html.H3(children = f"If candidate was {genderType}" if genderType != "overall" else "For both genders"),
-            html.div(children=[
-                html.div(style=col6,children=html.div(style=col12,children=dcc.Graph(id=genderType+"Diversity"))),
-                html.div(style=col6,children=html.div(style=col12,children=dcc.Graph(id=genderType+"Statistics"))),
+            html.H4(children = f"If candidate was {genderType}" if genderType != "overall" else "For both genders"),
+            html.Div(children=[
+                html.Div(style=col6,children=html.Div(style=col12,children=dcc.Loading(dcc.Graph(id=genderType+"Diversity")))),
+                html.Div(style=col6,children=html.Div(style=col12,children=dcc.Loading(dcc.Graph(id=genderType+"Statistics")))),
             ]),
-            html.div(chilren=dcc.Graph(id=genderType+"Correlations"))
+            html.Div(children=dcc.Loading(dcc.Graph(id=genderType+"Correlations")))
         ])
-    ]) for genderType in ["male","female","overall"]]
+    ) for genderType in ["male","female","overall"]]
 
-featureAnalysisLayout = html.Div(children=featureAnalysisTemplates)
+
+featureSelect = dcc.Dropdown(
+    id="featureSelect",
+    options=featureSelectOptions,
+    value=""
+)
+
+featureAnalysisLayout = html.Div(children= [
+    html.Div(children=[
+        html.H3(children="What do you want to analyze?"),
+        featureSelect
+    ])
+] + featureAnalysisTemplates)
 
 app.layout = html.Div(children= [
     dcc.Location(id='url', refresh=False),
@@ -549,38 +573,70 @@ def updatepreciseForestInfo(models):
     return hideValue
 
 
-#sandbox callbacks
+#Analysis callbacks
+for dfType in ["male","female","overall"]:
+    @app.callback(
+        Output(dfType+"Info","style"),
+        Input('featureSelect',"value"),
+            prevent_initial_call=True)
+    def updateStyles(featureParam):
+        if featureParam == "":
+            return displayHidden
+        elif featureParam == "samerace" and dfType in ["male","female"]:
+            return displayHidden
+        else:
+            return displayBlock
 
-# @app.callback(
-#     [dash.dependencies.Output('predictProbaGraph','figure')],
-#     [dash.dependencies.Input()]
-# )
-# def fitProba(models,featureParam,matchProfile):
-#     includedModels = generateIncludedModels
-#     newEnsemble = VotingClassifier(estimators = includedModels)
-#     allModels = [("Ensemble",newEnsemble)] + includedModels
+for dfType in ["male","female","overall"]:
+    for graphType in ["Diversity","Statistics","Correlations"]:
+        @app.callback(
+            Output(dfType+graphType,"figure"),
+            Input('modelSelection','value'),
+            Input('featureSelect',"value"),
+             prevent_initial_call=True)
+        def updateGraphs(models,featureParam):
+            if featureParam == "":
+                return go.Bar({})
 
-#     if len(list(set(datingTest[featureParam]))) < 30:
-#         resultsDF = createResultsDFFromDummies(newEnsemble,featureParam,matchProfile)
-#         fig = go.Figure(go.Bar(resultsDF,
-#         x=featureParam, 
-#         y="predictedSuccess",
-#         orientation='h',
-#         hovertext=["accuracy","recall","precision"]))
-#     else:
-#         resultsDF = createResultsDFFromRange(allModels,featureParam,matchProfile)
-#         fig = px.line(resultsDF,x=featureParam,y='predictedSuccess',color = 'modelName',
-#         labels= {featureParam:descriptionDictionary[featureParam],"modelName":"Model Name"},
-#         title=f"Predicted Success vs {descriptionDictionary[featureParam]}")
-        
-#     return fig
+            if dfType == "male":
+                chosenDF = datingMale
+            if dfType == "female":
+                chosenDF = datingFemale
+            else:
+                chosenDF = datingFull
+            
+            if graphType == "Diversity":
+                if featureParam == "samerace":
+                    return createDistributionFromSamerace()
+                elif featureParam in dummyDictionary.keys():
+                    return createDistributionFromDummies(featureParam,chosenDF,f"Distribution Amongst {descriptionDictionary[featureParam]} Values")
+                else:
+                    return createDistributionFromRange(featureParam,chosenDF)
+            
+            selectedModels = generateIncludedModels(models)
+            newEnsemble = VotingClassifier(estimators=selectedModels,voting="soft")
+            allModels = [("Ensemble",newEnsemble)] + selectedModels
+            
+            if featureParam == "samerace":
+                if dfType in ["male","female"]:
+                    return go.Bar({})
+                else:
+                    if graphType == "Statistics":
+                        return createStatisticsFromSamerace(newEnsemble)
+                    else:
+                        return createCorrelationsFromSamerace(newEnsemble)
+            elif featureParam in dummyDictionary.keys():
+                if graphType == "Statistics":
+                    return createStatisticsFromDummies(newEnsemble,featureParam,chosenDF,f"{descriptionDictionary[featureParam]} Statistics")
+                else:
+                    return createCorrelationsFromDummies(newEnsemble,featureParam,chosenDF,f"{descriptionDictionary[featureParam]} Correlations")
+            else:
+                if graphType == "Statistics":
+                    return createStatisticsFromRange(allModels,featureParam,chosenDF)
+                else:
+                    return createCorrelationsFromRange(allModels,featureParam,chosenDF,f"{descriptionDictionary[featureParam]} Correlations")
 
-# @app.callback(
-#     [dash.dependencies.Output('diversityGraph','figure')],
-#     [dash.dependencies.Input()]
-# )
-# def fitHist(featureParam):
-#     pass
+
 
 
 
