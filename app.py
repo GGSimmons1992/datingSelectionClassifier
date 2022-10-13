@@ -369,7 +369,9 @@ sidebar = html.Div(style=sidebarstyle,children=[
                 ],
                 href=page["path"],
                 active="exact"
-            ) for page in [{"name":"Feature Analysis","path":"/featureanalysis"},{"name":"Matchmakers","path":"/matchmakers"}]
+            ) for page in [{"name":"Home","path":"/"},
+            {"name":"Matchmakers","path":"/matchmakers"},
+            {"name":"Feature Analysis","path":"/featureanalysis"}]
         ],
         vertical=True,
         pills=True
@@ -461,7 +463,7 @@ app.layout = html.Div(children= [
     dcc.Location(id='url', refresh=False),
     sidebar,
     html.Div(style=contentstyle,children=[
-        html.H1(children='Ensemble Dash!',style={"background-color":"dodgerblue"}),
+        html.H1(children='Blind Dating Ensemble Classifier Dashboard',style={"background-color":"dodgerblue"}),
         html.H2(id="pagetitle",style={"background-color":"dodgerblue"}),
         dcc.Checklist(
             id="modelSelection",
@@ -478,7 +480,7 @@ app.layout = html.Div(children= [
     Input('url', 'pathname'))
 def updatePage(pathname):
     if pathname.lower() == "/":
-        return "Home", html.H3("Welcome to the Blind Dating Ensemble Vote Dashboard")
+        return "Home", html.H3("Welcome to the Blind Dating Ensemble Classifier Dashboard")
     elif "featureanalysis" in pathname.lower():
         return "Feature Analysis",featureAnalysisLayout    
     return "Matchmakers",matchmakersLayout
