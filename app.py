@@ -221,21 +221,21 @@ def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,figTitle):
     correlationDictionary = dict()
     correlationDictionary["label"] = []
     correlationDictionary["spearman r value"] = []
-    correlationDictionary["color"] = []
+    correlationDictionary["significance"] = []
 
     for dummyCol in dummyCols:
         dummyLabel = dummyValueDictionary[dummyCol]
         corr,p = spearmanr(np.array(fullX[dummyCol]).reshape(-1,).tolist(),list(yPredictFull))
-        significanceColor = "green" if p < 0.05 else "red"
+        significance = "Significant" if p < 0.05 else "Not Significant"
         correlationDictionary["label"].append(dummyLabel + f" p={np.round(p,2)}")
         correlationDictionary["spearman r value"].append(corr)
-        correlationDictionary["color"].append(significanceColor)
+        correlationDictionary["significance"].append(significance)
 
     resultsDF = createDFFromDictionary(correlationDictionary)
 
-    fig = px.bar(resultsDF, x="spearman r value",y="label",color="color",color_discrete_map={
-        'red': 'red',
-        'green': 'green'
+    fig = px.bar(resultsDF, x="spearman r value",y="label",color="significance",color_discrete_map={
+        'Not Significant': 'red',
+        'Significant': 'green'
     },
     orientation="h",labels={"spearman r value":"Spearman R Correlation Value","label":featureParam+" Value and P-Value"},
     title=figTitle)
@@ -302,6 +302,8 @@ def createDistributionFromRange(featureParam,fullX):
 
     fig = ff.create_distplot([featureData],[f"{featureParam} Distribution"])
 
+    fig.update_layout(title=f"{featureParam} Distribution")
+
     return fig
 
 def createStatisticsFromRange(newEnsemble,selectedModels,featureParam,fullX):
@@ -317,7 +319,7 @@ def createStatisticsFromRange(newEnsemble,selectedModels,featureParam,fullX):
 
     resultsDF = createDFFromDictionary(statisticsDictionary)
 
-    fig = px.scatter(resultsDF, x=featureParam, y=[modelTuple[0] for modelTuple in allModels],
+    fig = px.scatter(resultsDF, x=featureParam, y="Ensemble",labels={"Ensemble":"Predicted Probability"},
      title=f'Predicted probability of match based on {descriptionDictionary[featureParam]}')
 
     return fig
@@ -329,21 +331,21 @@ def createCorrelationsFromRange(newEnsemble,selectedModels,featureParam,fullX,fi
     correlationDictionary = dict()
     correlationDictionary["model"] = []
     correlationDictionary["spearman r value"] = []
-    correlationDictionary["color"] = []
+    correlationDictionary["significance"] = []
     featureValues = np.array(fullX[featureParam]).reshape(-1).tolist()
     for modelTuple in allModels:
         predicty = np.array(modelTuple[1].predict_proba(fullX)[:,1]).reshape(-1).tolist()
         corr,p = spearmanr(featureValues,predicty)
-        significanceColor = "green" if p < 0.05 else "red"
+        significance = "Significant" if p < 0.05 else "Not Significant"
         correlationDictionary["model"].append(modelTuple[0] + f" p={np.round(p,2)}")
         correlationDictionary["spearman r value"].append(corr)
-        correlationDictionary["color"].append(significanceColor)
+        correlationDictionary["significance"].append(significance)
 
     resultsDF = createDFFromDictionary(correlationDictionary)
 
-    fig = px.bar(resultsDF, x="spearman r value",y="model",color="color",color_discrete_map={
-        'red': 'red',
-        'green': 'green'
+    fig = px.bar(resultsDF, x="spearman r value",y="model",color="significance",color_discrete_map={
+        'Not Significant': 'red',
+        'Significant': 'green'
     },
     orientation="h",labels={"spearman r value":"Spearman R Correlation Value","model":"Model and P-Value"},
     title=figTitle)
