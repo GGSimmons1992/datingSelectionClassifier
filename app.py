@@ -63,6 +63,7 @@ X = datingTrain.drop("match",axis=1).select_dtypes(include=['uint8','int64','flo
 matchTest = datingTest["match"]
 XTest = datingTest.drop("match",axis=1).select_dtypes(include=['uint8','int64','float64'])
 
+matchFull = datingFull["match"]
 datingMale = datingFull[datingFull["gender"]==1].drop("match",axis=1)
 datingFemale = datingFull[datingFull["gender"]==0].drop("match",axis=1)
 datingFull = datingFull.drop("match",axis=1)
@@ -243,11 +244,13 @@ def createCorrelationsFromDummies(newEnsemble,featureParam,fullX,figTitle):
 
 def createDistributionFromSamerace():
     
-    counts = [datingFull[datingFull["samerace"] == val].shape[0] for val in [0,1]]
+    resultsDF = pd.DataFrame({
+        "Counts": [datingFull[datingFull["samerace"] == val].shape[0] for val in [0,1]],
+        "Pairing": ["Different Race", "Same Race"]
+    },columns=["Counts","Pairing"])
     
-    fig = go.Bar(x=counts,y=["Different Race","Same Race"],title="Number of Entries that are Same/Different Race")
-
-    fig.update_layout(xaxis_title="Counts")
+    fig = px.bar(resultsDF,x="Counts",y="Pairing",
+    title="Number of Entries that are Same/Different Race")
 
     return fig 
 
@@ -275,17 +278,21 @@ def createStatisticsFromSamerace(newEnsemble):
     return fig
 
 def createCorrelationsFromSamerace(newEnsemble):
+    actualMatch = np.array(matchFull).reshape(-1,).tolist()
     newEnsemble.fit(X,match)
-    predicty = np.array(newEnsemble.predict_proba(datingFull)[:,1]).reshape(-1).tolist()
-    corr,p = spearmanr(list(X["samerace"]),list(predicty))
-    significanceColor = "green" if p < 0.05 else "red"
+    sameraceValue = np.array(datingFull["samerace"]).reshape(-1,).tolist()
+    predicty = np.array(newEnsemble.predict_proba(datingFull)[:,1]).reshape(-1,).tolist()
+    corr,p = spearmanr(sameraceValue,predicty)
+    significanceValue = "Signficant" if p < 0.05 else "Not Significant"
 
-    fig = go.Bar(x=[corr],color=[significanceColor],color_discrete_map={
-        'red': 'red',
-        'green': 'green'
-    },
-    orientation="h",
-    title=f"Correlations on Same/Different Race p={round(corr,2)}")
+    resultsDF = pd.DataFrame({
+        "Same Race Value" : sameraceValue,
+        "Predicted Probability" : predicty,
+        "Actual Match Result" : actualMatch
+    },columns = ["Same Race Value","Predicted Probability","Actual Match Result"])
+
+    fig = px.scatter(resultsDF,x="Same Race Value",y="Predicted Probability",color="Actual Match Result",
+    title=f"Predicted Probability vs Same Race Value R={np.round(corr,2)} p={np.round(p,2)} {significanceValue}")
 
     return fig
 
