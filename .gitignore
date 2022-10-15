@@ -129,4 +129,10 @@ dmypy.json
 .pyre/
 
 # data
-data
+data/*.json
+data/*.csv
+data/*.doc
+data/processedData
+
+
+.DS_Store

@@ -31,7 +31,7 @@ with open('../data/plotlyDashData/forestParams.json') as d:
     forestParams = json.load(d)
     preciseForestParams = forestParams["preciseForestParams"]
     recallForestParams = forestParams["recallForestParams"]
-with open("../data/descriptionDictionary.json") as d:
+with open("../descriptionDictionary.json") as d:
     descriptionDictionary = json.load(d)  
 
 datingTrain = pd.read_csv('../data/plotlyDashData/datingTrain.csv')
@@ -161,7 +161,7 @@ dropList = ["iid","pid","round","order","undergra","from","zipcode","dec","match
 featureSelectValues = [col for col in columnList if col not in dropList] + ["partnerDistance"]
 featureSelectValues += [str(col)+"_o" for col in featureSelectValues if col not in ["samerace","int_corr","partnerDistance"]]
 featureSelectOptions = [
-    {"label":f'{col}) {descriptionDictionary[col]}',"value":col} for col in featureSelectValues
+    {"label":f"{col}) {descriptionDictionary[col]}","value":col} for col in featureSelectValues
 ]
 
 # store into json collection

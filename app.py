@@ -34,14 +34,14 @@ originalDummyDictionaryKeys = list(dummyDictionary.keys())
 for originalKey in originalDummyDictionaryKeys:
     dummyDictionary[originalKey+"_o"] = [str(col)+"_o" for col in dummyDictionary[originalKey]]
 
-with open("data/dummyValueDictionary.json") as d:
+with open("dummyValueDictionary.json") as d:
     dummyValueDictionary = json.load(d)
 
 originalDummyValueDictionaryKeys = list(dummyValueDictionary.keys())
 for originalKey in originalDummyValueDictionaryKeys:
     dummyValueDictionary[originalKey+"_o"] = dummyValueDictionary[originalKey]
 
-with open("data/descriptionDictionary.json") as d:
+with open("descriptionDictionary.json") as d:
     descriptionDictionary = json.load(d)
 
 matrixDictionaryKeys = matrixDictionary.keys()
