@@ -36,12 +36,16 @@ with open("../descriptionDictionary.json") as d:
 
 datingTrain = pd.read_csv('../data/plotlyDashData/datingTrain.csv')
 datingTest = pd.read_csv('../data/plotlyDashData/datingTest.csv')
+datingFull = pd.read_csv('../data/plotlyDashData/datingFull.csv')
 
 match = datingTrain["match"]
 X = datingTrain.drop("match",axis=1).select_dtypes(include=['uint8','int64','float64'])
 matchTest = datingTest["match"]
 XTest = datingTest.drop("match",axis=1).select_dtypes(include=['uint8','int64','float64'])
 
+datingMale = datingFull[datingFull["gender"]==1].drop("match",axis=1)
+datingFemale = datingFull[datingFull["gender"]==0].drop("match",axis=1)
+datingFull = datingFull.drop("match",axis=1)
 
 sqrtn = int(np.sqrt(X.shape[0]))
 logModel = lm.LogisticRegression(max_iter=1e9)
@@ -77,7 +81,7 @@ originalEstimtatorTuples = [
         ("recallForest",recallForest)
     ]
 
-ensembleVote = VotingClassifier(estimators = originalEstimtatorTuples)
+ensembleVote = VotingClassifier(estimators = originalEstimtatorTuples,voting="soft")
 allEstimatorTuples = [("Ensemble",ensembleVote)] + originalEstimtatorTuples
 for estimatorTuple in allEstimatorTuples:
     (estimatorTuple[1]).fit(X,match)
@@ -177,3 +181,10 @@ collectionDictionary["featureSelectOptions"] = featureSelectOptions
 with open("../data/plotlyDashData/collectionDictionary.json","w") as fp:
     json.dump(collectionDictionary,fp)
 
+for genderTuple in [("male",datingMale),("female",datingFemale),("overall",datingFull)]:
+    predictProbaDictionary = dict()
+    for mod in allEstimatorTuples:
+        predictProbaDictionary[mod[0]] = np.array(mod[1].predict_proba(genderTuple[1])[:,1]).reshape(-1,).tolist()
+    pd.DataFrame(predictProbaDictionary,
+    columns=list(predictProbaDictionary.keys())).to_csv(
+        f"../data/plotlyDashData/{genderTuple[0]}Predictions.csv")
