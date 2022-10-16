@@ -356,7 +356,7 @@ def createCorrelationsFromRange(newEnsemble,selectedModels,featureParam,fullX,fi
 
 # Dash code
 app = Dash(__name__,suppress_callback_exceptions=True,external_stylesheets=[dbc.themes.BOOTSTRAP])
-
+server = app.server
 col12 = styles.col12
 col8 = styles.col8
 col6 = styles.col6
