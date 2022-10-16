@@ -68,11 +68,11 @@ datingMale = datingFull[datingFull["gender"]==1].drop("match",axis=1)
 datingFemale = datingFull[datingFull["gender"]==0].drop("match",axis=1)
 datingFull = datingFull.drop("match",axis=1)
 
-with open('data/processedData/treeParams.json') as d:
+with open('data/plotlyDashData/treeParams.json') as d:
     treeParams = json.load(d)
     preciseTreeParams = treeParams["preciseTreeParams"]
     recallTreeParams = treeParams["recallTreeParams"]
-with open('data/processedData/forestParams.json') as d:
+with open('data/plotlyDashData/forestParams.json') as d:
     forestParams = json.load(d)
     preciseForestParams = forestParams["preciseForestParams"]
     recallForestParams = forestParams["recallForestParams"]
