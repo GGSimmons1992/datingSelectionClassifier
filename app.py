@@ -58,6 +58,10 @@ datingTrain = pd.read_csv('data/plotlyDashData/datingTrain.csv')
 datingTest = pd.read_csv('data/plotlyDashData/datingTest.csv')
 datingFull = pd.read_csv('data/plotlyDashData/datingFull.csv')
 
+malePredictions = pd.read_csv("data/plotlyDashData/malePredictions.csv")
+femalePredictions = pd.read_csv("data/plotlyDashData/femalePredictions.csv")
+overallPredictions = pd.read_csv("data/plotlyDashData/overallPredictions.csv")
+
 match = datingTrain["match"]
 X = datingTrain.drop("match",axis=1).select_dtypes(include=['uint8','int64','float64'])
 matchTest = datingTest["match"]
@@ -111,11 +115,6 @@ originalEstimtatorTuples = [
     ]
 
 ensembleVote = VotingClassifier(estimators = originalEstimtatorTuples)
-
-
-for estimatorTuple in originalEstimtatorTuples:
-    (estimatorTuple[1]).fit(X,match)
-ensembleVote.fit(X,match)
 
 allEstimatorTuples = [("Ensemble",ensembleVote)] + originalEstimtatorTuples
 
@@ -306,10 +305,10 @@ def createDistributionFromRange(featureParam,fullX):
 
     return fig
 
-def createStatisticsFromRange(newEnsemble,selectedModels,featureParam,fullX):
+def createStatisticsFromRange(newEnsemble,featureParam,fullX):
     newEnsemble.fit(X,match)
     fullXSorted = fullX.copy().sort_values(by=featureParam)
-    allModels = [("Ensemble",newEnsemble)] + [modelTuple for modelTuple in originalEstimtatorTuples if modelTuple[0] in selectedModels]
+    allModels = [("Ensemble",newEnsemble)]
     
     statisticsDictionary = dict()
     statisticsDictionary[featureParam] = np.array(fullXSorted[featureParam]).reshape(-1,).tolist()
@@ -324,7 +323,7 @@ def createStatisticsFromRange(newEnsemble,selectedModels,featureParam,fullX):
 
     return fig
 
-def createCorrelationsFromRange(newEnsemble,selectedModels,featureParam,fullX,figTitle):
+def createCorrelationsFromRange(newEnsemble,selectedModels,featureParam,fullX,figTitle,genderPredictions):
     newEnsemble.fit(X,match)
     allModels = [("Ensemble",newEnsemble)] + [modelTuple for modelTuple in originalEstimtatorTuples if modelTuple[0] in selectedModels]
 
@@ -334,7 +333,10 @@ def createCorrelationsFromRange(newEnsemble,selectedModels,featureParam,fullX,fi
     correlationDictionary["significance"] = []
     featureValues = np.array(fullX[featureParam]).reshape(-1).tolist()
     for modelTuple in allModels:
-        predicty = np.array(modelTuple[1].predict_proba(fullX)[:,1]).reshape(-1).tolist()
+        if modelTuple[0] == "Ensemble":
+            predicty = np.array(modelTuple[1].predict_proba(fullX)[:,1]).reshape(-1).tolist()
+        else:
+            predicty = np.array(genderPredictions[modelTuple[0]]).reshape(-1,).tolist()
         corr,p = spearmanr(featureValues,predicty)
         significance = "Significant" if p < 0.05 else "Not Significant"
         correlationDictionary["model"].append(modelTuple[0] + f" p={np.round(p,2)}")
@@ -666,9 +668,9 @@ def updateStatistics(models,featureParam):
             f = createStatisticsFromDummies(newEnsemble,featureParam,datingFemale,f"{descriptionDictionary[featureParam]} Statistics")
             o = createStatisticsFromDummies(newEnsemble,featureParam,datingFull,f"{descriptionDictionary[featureParam]} Statistics")
         else:
-            m = createStatisticsFromRange(newEnsemble,models,featureParam,datingMale)
-            f = createStatisticsFromRange(newEnsemble,models,featureParam,datingFemale)
-            o = createStatisticsFromRange(newEnsemble,models,featureParam,datingFull)
+            m = createStatisticsFromRange(newEnsemble,featureParam,datingMale)
+            f = createStatisticsFromRange(newEnsemble,featureParam,datingFemale)
+            o = createStatisticsFromRange(newEnsemble,featureParam,datingFull)
         return m,f,o
 
 @app.callback(
@@ -691,9 +693,9 @@ def updateCorrelations(models,featureParam):
             f = createCorrelationsFromDummies(newEnsemble,featureParam,datingFemale,f"{descriptionDictionary[featureParam]} Correlations")
             o = createCorrelationsFromDummies(newEnsemble,featureParam,datingFull,f"{descriptionDictionary[featureParam]} Correlations")
         else:
-            m = createCorrelationsFromRange(newEnsemble,models,featureParam,datingMale,f"{descriptionDictionary[featureParam]} Correlations")
-            f = createCorrelationsFromRange(newEnsemble,models,featureParam,datingFemale,f"{descriptionDictionary[featureParam]} Correlations")
-            o = createCorrelationsFromRange(newEnsemble,models,featureParam,datingFull,f"{descriptionDictionary[featureParam]} Correlations")
+            m = createCorrelationsFromRange(newEnsemble,models,featureParam,datingMale,f"{descriptionDictionary[featureParam]} Correlations",malePredictions)
+            f = createCorrelationsFromRange(newEnsemble,models,featureParam,datingFemale,f"{descriptionDictionary[featureParam]} Correlations",femalePredictions)
+            o = createCorrelationsFromRange(newEnsemble,models,featureParam,datingFull,f"{descriptionDictionary[featureParam]} Correlations",overallPredictions)
         return m,f,o
 
 #run app
