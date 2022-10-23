@@ -320,7 +320,6 @@ def getLocation(zipcode,fromLocation):
 def fixAmbiguousScores(df):
     halfwayQuestionSanityTest(df,"beginning of fixAmbiguousScores")
     df = redistributePoints(df)
-    df = fixExpnumAndMatches(df)
     df = applyHalfwayChange(df)
     halfwayQuestionSanityTest(df,"end of fixAmbiguousScores")
     return df
@@ -346,13 +345,6 @@ def redistributePoints(df):
                         questionValues[rowindex] = round(questionValues[rowindex])
             df[str(questionCol)] = pd.Series(questionValues)
         df = df.drop(questionSumString,axis=1)
-    return df
-
-def fixExpnumAndMatches(df):
-    expectedValues = ["expnum","expnum_o","match_es","match_es_o"]
-    for x in expectedValues:
-        if x in df.columns:
-            df[x] = round(20 * df[x]/df["round"])
     return df
 
 def applyHalfwayChange(df):
