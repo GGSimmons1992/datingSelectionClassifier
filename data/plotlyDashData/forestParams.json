@@ -1,1 +1,1 @@
-{"preciseForestParams": {"criterion": "entropy", "max_depth": 15, "max_features": 7, "n_estimators": 300}, "recallForestParams": {"criterion": "gini", "max_depth": 30, "max_features": 30, "n_estimators": 200}}
+{"preciseForestParams": {"criterion": "entropy", "max_depth": 15, "max_features": 15, "n_estimators": 200}, "recallForestParams": {"criterion": "gini", "max_depth": 30, "max_features": 30, "n_estimators": 300}}
