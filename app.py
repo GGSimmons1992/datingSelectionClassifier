@@ -48,7 +48,7 @@ matrixDictionaryKeys = matrixDictionary.keys()
 for k in matrixDictionaryKeys:
     cm = np.array(matrixDictionary[k])
     matrixDictionary[k] = px.imshow(cm,
-    labels=dict(x="Actual", y="Predicted"),
+    labels=dict(x="Predicted", y="Actual"),
     x=['Match Fail', 'Match Success'],
     y=['Match Fail', 'Match Success'],
     text_auto=True)
@@ -519,7 +519,7 @@ def updateEnsembleInfo(models):
     precisionScore = precision_score(matchTest,ypredict)
 
     cm = px.imshow(confusionMatrix,
-    labels=dict(x="Actual", y="Predicted"),
+    labels=dict(x="Predicted", y="Actual"),
     x=['Match Fail', 'Match Success'],
     y=['Match Fail', 'Match Success'],
     text_auto=True) 
