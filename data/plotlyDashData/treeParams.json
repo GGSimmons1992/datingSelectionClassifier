@@ -1,1 +1,1 @@
-{"preciseTreeParams": {"criterion": "gini", "max_depth": 7, "max_features": 15}, "recallTreeParams": {"criterion": "entropy", "max_depth": 30, "max_features": 30}}
+{"preciseTreeParams": {"criterion": "entropy", "max_depth": 7, "max_features": 15}, "recallTreeParams": {"criterion": "gini", "max_depth": 30, "max_features": 30}}
