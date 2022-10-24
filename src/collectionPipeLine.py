@@ -150,7 +150,7 @@ modelDescriptionDictionary = {
     "Ensemble":"ensembleVote classifier using selected parameters above",
     "logModel":"logarithmic regression with a standard scaler",
     "knn5":"k-neighbors with k=5",
-    "knnsqrtn":"k-neighbors with k=(n_features)",
+    "knnsqrtn":"k-neighbors with k=sqrt(n_features)",
     "gradientdeci":"gradient boosting classifer with learning rate = 0.1",
     "gradientdeka":"gradient boosting classifer with learning rate = 10",
     "preciseTree":"decision tree trained for best precision" + str(preciseTreeParams),
