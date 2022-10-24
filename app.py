@@ -299,9 +299,12 @@ def createDistributionFromRange(featureParam,fullX):
 
     featureData = list(fullX[featureParam])
 
+    xbar = np.round(np.mean(featureData),3)
+    se = np.round(np.std(featureData)/np.sqrt(len(featureData)),3)
+
     fig = ff.create_distplot([featureData],[f"{featureParam} Distribution"])
 
-    fig.update_layout(title=f"{featureParam} Distribution")
+    fig.update_layout(title=f"{featureParam} Distribution",xaxis={"title": f"{featureParam} {xbar}+/-{se}"})
 
     return fig
 
